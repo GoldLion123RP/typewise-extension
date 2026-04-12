@@ -20,7 +20,7 @@ if (-not (Test-Path $resolvedSourceFile)) {
     throw "Source icon not found: $resolvedSourceFile"
 }
 
-function Resize-Icon {
+function New-IconAsset {
     param(
         [System.Drawing.Image]$Source,
         [int]$Size,
@@ -52,10 +52,10 @@ function Resize-Icon {
 $sourceImage = [System.Drawing.Image]::FromFile((Resolve-Path $resolvedSourceFile).Path)
 
 try {
-    Resize-Icon -Source $sourceImage -Size 16 -OutputPath (Join-Path $iconsDir "icon-16.png")
-    Resize-Icon -Source $sourceImage -Size 32 -OutputPath (Join-Path $iconsDir "icon-32.png")
-    Resize-Icon -Source $sourceImage -Size 48 -OutputPath (Join-Path $iconsDir "icon-48.png")
-    Resize-Icon -Source $sourceImage -Size 128 -OutputPath (Join-Path $iconsDir "icon-128.png")
+    New-IconAsset -Source $sourceImage -Size 16 -OutputPath (Join-Path $iconsDir "icon-16.png")
+    New-IconAsset -Source $sourceImage -Size 32 -OutputPath (Join-Path $iconsDir "icon-32.png")
+    New-IconAsset -Source $sourceImage -Size 48 -OutputPath (Join-Path $iconsDir "icon-48.png")
+    New-IconAsset -Source $sourceImage -Size 128 -OutputPath (Join-Path $iconsDir "icon-128.png")
 
     Write-Host "Created icon-16.png, icon-32.png, icon-48.png, icon-128.png from $resolvedSourceFile" -ForegroundColor Green
 }
