@@ -15,7 +15,7 @@ class StorageManager {
     try {
       const result = await chrome.storage.local.get(this.STORAGE_KEY);
       if (result[this.STORAGE_KEY]) {
-        return this.decrypt(result[this.STORAGE_KEY]);
+        return this.normalizeStorageData(this.decrypt(result[this.STORAGE_KEY]));
       }
       return this.getDefaultData();
     } catch (error) {
@@ -33,6 +33,7 @@ class StorageManager {
 
       // Save plaintext snippets for content script (fast access, no decryption needed)
       await chrome.storage.local.set({ snippets: data.snippets });
+      await chrome.storage.local.set({ settings: data.user.settings });
 
       // Sync to chrome.storage.sync if enabled
       if (data.user.settings.syncEnabled) {
@@ -45,27 +46,64 @@ class StorageManager {
   }
 
   async getSnippets(): Promise<Snippet[]> {
+    const local = await chrome.storage.local.get('snippets');
+    const localSnippets = this.sanitizeSnippets(local.snippets);
+
+    if (localSnippets.length > 0) {
+      // Keep plaintext snippet store normalized.
+      if (!Array.isArray(local.snippets) || localSnippets.length !== local.snippets.length) {
+        await chrome.storage.local.set({ snippets: localSnippets });
+      }
+      return localSnippets;
+    }
+
     const data = await this.getAll();
-    return data.snippets || [];
+    const snippets = this.sanitizeSnippets(data.snippets);
+
+    if (snippets.length === 0) {
+      const defaults = this.getDefaultSnippets();
+      await this.saveAll({ ...data, snippets: defaults });
+      return defaults;
+    }
+
+    if (!Array.isArray(data.snippets) || snippets.length !== data.snippets.length) {
+      await this.saveAll({ ...data, snippets });
+    }
+
+    return snippets;
   }
 
   async saveSnippet(snippet: Snippet): Promise<void> {
-    const data = await this.getAll();
-    const index = data.snippets.findIndex(s => s.id === snippet.id);
+    const snippets = await this.getSnippets();
+    const index = snippets.findIndex(s => s.id === snippet.id);
 
     if (index >= 0) {
-      data.snippets[index] = snippet;
+      snippets[index] = snippet;
     } else {
-      data.snippets.push(snippet);
+      snippets.push(snippet);
     }
 
-    await this.saveAll(data);
+    await chrome.storage.local.set({ snippets });
+
+    // Keep encrypted blob synchronized best-effort.
+    try {
+      const data = await this.getAll();
+      await this.saveAll({ ...data, snippets });
+    } catch (error) {
+      console.warn('Unable to sync encrypted storage after saveSnippet:', error);
+    }
   }
 
   async deleteSnippet(id: string): Promise<void> {
-    const data = await this.getAll();
-    data.snippets = data.snippets.filter(s => s.id !== id);
-    await this.saveAll(data);
+    const snippets = (await this.getSnippets()).filter(s => s.id !== id);
+    await chrome.storage.local.set({ snippets });
+
+    try {
+      const data = await this.getAll();
+      await this.saveAll({ ...data, snippets });
+    } catch (error) {
+      console.warn('Unable to sync encrypted storage after deleteSnippet:', error);
+    }
   }
 
   async getUser(): Promise<User> {
@@ -166,10 +204,104 @@ class StorageManager {
   async importData(jsonData: string): Promise<void> {
     try {
       const data = JSON.parse(jsonData);
-      await this.saveAll(data);
+
+      if (Array.isArray(data)) {
+        const snippets = this.sanitizeSnippets(data);
+        if (snippets.length === 0) {
+          throw new Error('No valid snippets found');
+        }
+
+        const current = await this.getAll();
+        await this.saveAll({ ...current, snippets });
+        return;
+      }
+
+      if (data && typeof data === 'object' && Array.isArray(data.snippets)) {
+        const snippets = this.sanitizeSnippets(data.snippets);
+        if (snippets.length === 0) {
+          throw new Error('No valid snippets found');
+        }
+
+        const current = await this.getAll();
+        const importedSettings = data.user?.settings || {};
+        await this.saveAll({
+          ...current,
+          snippets,
+          user: {
+            ...current.user,
+            settings: {
+              ...current.user.settings,
+              ...importedSettings,
+            },
+          },
+        });
+        return;
+      }
+
+      throw new Error('Unsupported import format');
     } catch (error) {
       throw new Error('Invalid import data format');
     }
+  }
+
+  private sanitizeSnippets(value: unknown): Snippet[] {
+    if (!Array.isArray(value)) return [];
+
+    return value
+      .map((item, index) => this.normalizeSnippet(item, index))
+      .filter((snippet): snippet is Snippet => snippet !== null);
+  }
+
+  private normalizeSnippet(value: unknown, index: number): Snippet | null {
+    if (!value || typeof value !== 'object') return null;
+    const item = value as Record<string, unknown>;
+
+    const shortcut = this.pickString(item.shortcut, item.trigger, item.abbr);
+    const content = this.pickString(item.content, item.text, item.value, item.body);
+    if (!shortcut || !content) return null;
+
+    const now = new Date().toISOString();
+    const tags = Array.isArray(item.tags)
+      ? item.tags.filter((tag): tag is string => typeof tag === 'string').map((tag) => tag.trim()).filter(Boolean)
+      : [];
+
+    return {
+      id: this.pickString(item.id) || `snippet-${Date.now()}-${index}`,
+      title: this.pickString(item.title, item.name) || `Snippet ${index + 1}`,
+      shortcut,
+      content,
+      category: this.pickString(item.category) || 'General',
+      tags,
+      usageCount: typeof item.usageCount === 'number' && item.usageCount >= 0 ? item.usageCount : 0,
+      createdAt: this.pickString(item.createdAt) || now,
+      updatedAt: this.pickString(item.updatedAt) || now,
+      isActive: typeof item.isActive === 'boolean' ? item.isActive : true,
+    };
+  }
+
+  private pickString(...values: unknown[]): string | undefined {
+    const found = values.find((value) => typeof value === 'string' && value.trim().length > 0) as string | undefined;
+    return found?.trim();
+  }
+
+  private normalizeStorageData(value: Partial<StorageData> | undefined): StorageData {
+    const defaults = this.getDefaultData();
+    const normalizedSnippets = this.sanitizeSnippets(value?.snippets);
+
+    return {
+      ...defaults,
+      ...value,
+      snippets: normalizedSnippets.length > 0 ? normalizedSnippets : defaults.snippets,
+      user: {
+        ...defaults.user,
+        ...value?.user,
+        settings: {
+          ...defaults.user.settings,
+          ...value?.user?.settings,
+        },
+      },
+      encryptionEnabled: typeof value?.encryptionEnabled === 'boolean' ? value.encryptionEnabled : true,
+    };
   }
 }
 

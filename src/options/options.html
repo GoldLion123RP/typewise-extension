@@ -11,58 +11,77 @@
 </head>
 <body>
   <div id="app" class="options-container">
-    <!-- Header -->
     <header class="header">
       <div class="header-content">
-        <div class="logo">
+        <div class="brand-block">
           <img src="../assets/icons/icon-48.png" alt="TypeWise">
           <div>
-            <h1>TypeWise Settings</h1>
-            <p class="subtitle">Configure your text expansion preferences</p>
+            <h1>TypeWise Control Center</h1>
+            <p class="subtitle">Precision snippet operations for speed-critical workflows</p>
           </div>
         </div>
         <div class="header-actions">
-          <button id="themeToggle" class="icon-btn" title="Toggle theme">🌙</button>
-          <button id="saveBtn" class="btn btn-primary">Save Changes</button>
+          <button id="themeToggle" class="icon-btn" title="Toggle theme" type="button">◐</button>
+          <button id="saveBtn" class="btn btn-primary" type="button">Save Changes</button>
         </div>
       </div>
     </header>
 
-    <!-- Main Content -->
     <div class="content">
-      <!-- Sidebar Navigation -->
       <nav class="sidebar">
+        <div class="sidebar-title">Workspace</div>
         <ul class="nav-list">
           <li class="nav-item active" data-tab="general">
-            <span class="nav-icon">⚙️</span>
+            <span class="nav-dot"></span>
             <span class="nav-text">General</span>
           </li>
           <li class="nav-item" data-tab="snippets">
-            <span class="nav-icon">📝</span>
+            <span class="nav-dot"></span>
             <span class="nav-text">Snippets</span>
           </li>
           <li class="nav-item" data-tab="sync">
-            <span class="nav-icon">☁️</span>
+            <span class="nav-dot"></span>
             <span class="nav-text">Sync & Backup</span>
           </li>
           <li class="nav-item" data-tab="shortcuts">
-            <span class="nav-icon">⌨️</span>
+            <span class="nav-dot"></span>
             <span class="nav-text">Shortcuts</span>
           </li>
           <li class="nav-item" data-tab="about">
-            <span class="nav-icon">ℹ️</span>
+            <span class="nav-dot"></span>
             <span class="nav-text">About</span>
           </li>
         </ul>
       </nav>
 
-      <!-- Tab Contents -->
-      <div class="tab-contents">
-        <!-- General Tab -->
+      <main class="tab-contents">
         <div id="general-tab" class="tab-pane active">
-          <h2>General Settings</h2>
-          
-          <div class="settings-group">
+          <section class="hero-action">
+            <div class="hero-copy">
+              <h2>Hero Action</h2>
+              <p>Operate your snippet system with crisp, modular controls and immediate feedback.</p>
+            </div>
+            <div class="hero-stats">
+              <div class="hero-stat-card">
+                <span class="hero-stat-value" id="heroSnippetCount">0</span>
+                <span class="hero-stat-label">Total Snippets</span>
+              </div>
+              <div class="hero-stat-card">
+                <span class="hero-stat-value" id="heroActiveCount">0</span>
+                <span class="hero-stat-label">Active</span>
+              </div>
+              <div class="hero-stat-card">
+                <span class="hero-stat-value" id="heroExpansionCount">0</span>
+                <span class="hero-stat-label">Expansions</span>
+              </div>
+            </div>
+            <div class="hero-actions">
+              <button id="heroCreateSnippetBtn" class="btn btn-primary" type="button">Create Snippet</button>
+              <button id="heroSyncBtn" class="btn btn-teal" type="button">Sync Now</button>
+            </div>
+          </section>
+
+          <section class="settings-group">
             <h3>Appearance</h3>
             <div class="setting-item">
               <label for="theme">Theme</label>
@@ -72,96 +91,87 @@
                 <option value="dark">Dark</option>
               </select>
             </div>
-          </div>
+          </section>
 
-          <div class="settings-group">
+          <section class="settings-group">
             <h3>Expansion Settings</h3>
             <div class="setting-item">
               <label for="triggerKey">Trigger Key</label>
               <input type="text" id="triggerKey" maxlength="1" value="/">
               <p class="help-text">Character that triggers snippet expansion</p>
             </div>
-            
+
             <div class="setting-item">
               <label for="expandDelay">Expansion Delay (ms)</label>
               <input type="number" id="expandDelay" min="0" max="1000" value="0">
               <p class="help-text">Delay before auto-expanding snippets</p>
             </div>
-            
-            <div class="setting-item">
+
+            <div class="setting-item checkbox-item">
               <label>
                 <input type="checkbox" id="caseSensitive">
                 Case Sensitive Shortcuts
               </label>
             </div>
-            
-            <div class="setting-item">
+
+            <div class="setting-item checkbox-item">
               <label>
                 <input type="checkbox" id="showNotifications">
                 Show Expansion Notifications
               </label>
             </div>
-          </div>
+          </section>
         </div>
 
-        <!-- Snippets Tab -->
         <div id="snippets-tab" class="tab-pane">
-          <h2>Manage Snippets</h2>
-          
+          <h2>Snippet Modules</h2>
+
           <div class="snippets-toolbar">
             <input type="text" id="snippetSearch" placeholder="Search snippets...">
-            <button id="addSnippetBtn" class="btn btn-primary">+ Add Snippet</button>
-            <button id="importSnippetsBtn" class="btn btn-secondary">Import</button>
-            <button id="exportSnippetsBtn" class="btn btn-secondary">Export</button>
+            <button id="addSnippetBtn" class="btn btn-primary" type="button">+ Add Snippet</button>
+            <button id="importSnippetsBtn" class="btn btn-secondary" type="button">Import</button>
+            <button id="exportSnippetsBtn" class="btn btn-secondary" type="button">Export</button>
           </div>
-          
-          <div id="snippetsList" class="snippets-grid">
-            <!-- Snippets will be loaded here -->
-          </div>
+
+          <div id="snippetsList" class="snippets-grid"></div>
         </div>
 
-        <!-- Sync Tab -->
         <div id="sync-tab" class="tab-pane">
           <h2>Sync & Backup</h2>
-          
-          <div class="settings-group">
+
+          <section class="settings-group">
             <h3>GitHub Integration</h3>
-            
-            <div id="githubStatus" class="github-status">
-              <!-- GitHub connection status -->
-            </div>
-            
+
+            <div id="githubStatus" class="github-status"></div>
+
             <div class="setting-item">
-              <button id="connectGithubBtn" class="btn btn-primary">
-                Connect GitHub Account
-              </button>
+              <button id="connectGithubBtn" class="btn btn-primary" type="button">Connect GitHub Account</button>
             </div>
-            
-            <div class="setting-item">
+
+            <div class="setting-item checkbox-item">
               <label>
                 <input type="checkbox" id="syncEnabled">
                 Enable Automatic Sync
               </label>
             </div>
-            
-            <div class="setting-item">
+
+            <div class="setting-item checkbox-item">
               <label>
                 <input type="checkbox" id="autoBackup">
                 Auto-backup Every 30 Minutes
               </label>
             </div>
-            
+
             <div class="sync-actions">
-              <button id="syncNowBtn" class="btn btn-secondary">Sync Now</button>
-              <button id="pullFromGistBtn" class="btn btn-secondary">Pull from Gist</button>
+              <button id="syncNowBtn" class="btn btn-secondary" type="button">Sync Now</button>
+              <button id="pullFromGistBtn" class="btn btn-secondary" type="button">Pull from Gist</button>
             </div>
-          </div>
+          </section>
         </div>
 
-        <!-- Shortcuts Tab -->
         <div id="shortcuts-tab" class="tab-pane">
           <h2>Keyboard Shortcuts</h2>
-          
+
           <div class="shortcuts-list">
             <div class="shortcut-item">
               <span class="shortcut-desc">Open TypeWise</span>
@@ -176,29 +186,24 @@
               <kbd>Tab</kbd>
             </div>
           </div>
-          
-          <p class="help-text">
-            To customize keyboard shortcuts, go to chrome://extensions/shortcuts
-          </p>
+
+          <p class="help-text">To customize keyboard shortcuts, go to chrome://extensions/shortcuts</p>
         </div>
 
-        <!-- About Tab -->
         <div id="about-tab" class="tab-pane">
           <h2>About TypeWise</h2>
-          
+
           <div class="about-content">
             <img src="../assets/icons/icon-128.png" alt="TypeWise" class="about-logo">
             <h3>TypeWise v1.0.0</h3>
             <p>Smart text expansion extension for Chrome and Firefox</p>
-            
+
             <div class="about-links">
-              <a href="https://github.com/GoldLion123RP/typewise-extension" target="_blank">
-                GitHub Repository
-              </a>
+              <a href="https://github.com/GoldLion123RP/typewise-extension" target="_blank">GitHub Repository</a>
               <a href="#" id="reportBugLink">Report a Bug</a>
               <a href="#" id="requestFeatureLink">Request a Feature</a>
             </div>
-            
+
             <div class="stats">
               <div class="stat-item">
                 <span class="stat-value" id="totalSnippetsCount">0</span>
@@ -211,49 +216,48 @@
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
-  <!-- Snippet Modal -->
-  <div id="snippetModal" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <h3 id="modalTitle">Add Snippet</h3>
-        <button id="closeModalBtn" class="icon-btn">×</button>
-      </div>
-      <div class="modal-body">
-        <form id="snippetForm">
-          <input type="hidden" id="snippetId">
-          
-          <div class="form-group">
-            <label for="snippetTitle">Title</label>
-            <input type="text" id="snippetTitle" required placeholder="e.g., Email Signature">
-          </div>
-          
-          <div class="form-group">
-            <label for="snippetShortcut">Shortcut</label>
-            <input type="text" id="snippetShortcut" required placeholder="e.g., /sig">
-            <p class="help-text">The text that will trigger this snippet</p>
-          </div>
-          
-          <div class="form-group">
-            <label for="snippetContent">Content</label>
-            <textarea id="snippetContent" required rows="6" placeholder="Enter the text to expand..."></textarea>
-            <p class="help-text">Variables: {{date}}, {{time}}, {{clipboard}}</p>
-          </div>
-          
-          <div class="form-group">
-            <label for="snippetTags">Tags (comma separated)</label>
-            <input type="text" id="snippetTags" placeholder="email, work, personal">
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button id="cancelSnippetBtn" class="btn btn-secondary">Cancel</button>
-        <button id="saveSnippetBtn" class="btn btn-primary">Save Snippet</button>
-      </div>
-    </div>
-  </div>
 
+    <div id="snippetModal" class="modal-overlay hidden">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="modalTitle">Add Snippet</h3>
+          <button id="closeModalBtn" class="icon-btn" type="button">×</button>
+        </div>
+        <div class="modal-body">
+          <form id="snippetForm">
+            <input type="hidden" id="snippetId">
+
+            <div class="form-group">
+              <label for="snippetTitle">Title</label>
+              <input type="text" id="snippetTitle" required placeholder="e.g., Email Signature">
+            </div>
+
+            <div class="form-group">
+              <label for="snippetShortcut">Shortcut</label>
+              <input type="text" id="snippetShortcut" required placeholder="e.g., /sig">
+              <p class="help-text">The text that will trigger this snippet</p>
+            </div>
+
+            <div class="form-group">
+              <label for="snippetContent">Content</label>
+              <textarea id="snippetContent" required rows="6" placeholder="Enter the text to expand..."></textarea>
+              <p class="help-text">Variables: {{date}}, {{time}}, {{clipboard}}</p>
+            </div>
+
+            <div class="form-group">
+              <label for="snippetTags">Tags (comma separated)</label>
+              <input type="text" id="snippetTags" placeholder="email, work, personal">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelSnippetBtn" class="btn btn-secondary" type="button">Cancel</button>
+          <button id="saveSnippetBtn" class="btn btn-primary" type="button">Save Snippet</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="options.js"></script>

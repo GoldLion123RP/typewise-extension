@@ -12,11 +12,18 @@ class OptionsManager {
   }
 
   async init() {
-    await this.loadSettings();
-    await this.loadSnippets();
     this.attachEventListeners();
+
+    try {
+      await this.loadSettings();
+      await this.loadSnippets();
+      await this.updateGitHubStatus();
+    } catch (error) {
+      console.error('Options initialization error:', error);
+      this.showToast('Recovered from a data error. Please review your snippets.', 'warning');
+    }
+
     this.checkWelcomeMode();
-    await this.updateGitHubStatus();
   }
 
   async loadSettings() {
@@ -71,6 +78,13 @@ class OptionsManager {
     });
 
     document.getElementById('addSnippetBtn')?.addEventListener('click', () => this.openSnippetModal());
+    document.getElementById('heroCreateSnippetBtn')?.addEventListener('click', () => {
+      this.switchTab('snippets');
+      this.openSnippetModal();
+    });
+    document.getElementById('heroSyncBtn')?.addEventListener('click', () => {
+      void this.syncNow();
+    });
     document.getElementById('importSnippetsBtn')?.addEventListener('click', () => {
       void this.importSnippets();
     });
@@ -86,6 +100,17 @@ class OptionsManager {
     document.getElementById('cancelSnippetBtn')?.addEventListener('click', () => this.closeSnippetModal());
     document.getElementById('saveSnippetBtn')?.addEventListener('click', () => {
       void this.saveSnippetForm();
+    });
+
+    document.getElementById('snippetForm')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      void this.saveSnippetForm();
+    });
+
+    document.getElementById('snippetModal')?.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).id === 'snippetModal') {
+        this.closeSnippetModal();
+      }
     });
 
     document.getElementById('snippetsList')?.addEventListener('click', (e) => {
@@ -163,9 +188,9 @@ class OptionsManager {
     const term = searchTerm.trim().toLowerCase();
     const filtered = this.snippets.filter(
       (snippet) =>
-        snippet.title.toLowerCase().includes(term) ||
-        snippet.shortcut.toLowerCase().includes(term) ||
-        snippet.content.toLowerCase().includes(term),
+        (snippet.title || '').toLowerCase().includes(term) ||
+        (snippet.shortcut || '').toLowerCase().includes(term) ||
+        (snippet.content || '').toLowerCase().includes(term),
     );
 
     if (filtered.length === 0) {
@@ -178,10 +203,10 @@ class OptionsManager {
         (snippet) => `
         <div class="snippet-card">
           <h4>
-            ${this.escapeHtml(snippet.title)}
-            <span class="snippet-shortcut">${this.escapeHtml(snippet.shortcut)}</span>
+            ${this.escapeHtml(snippet.title || 'Untitled')}
+            <span class="snippet-shortcut">${this.escapeHtml(snippet.shortcut || '')}</span>
           </h4>
-          <div class="snippet-content-preview">${this.escapeHtml(snippet.content)}</div>
+          <div class="snippet-content-preview">${this.escapeHtml(snippet.content || '')}</div>
           <div class="snippet-actions">
             <button class="snippet-action-btn edit-btn" data-id="${snippet.id}">Edit</button>
             <button class="snippet-action-btn delete-btn delete" data-id="${snippet.id}">Delete</button>
@@ -224,10 +249,13 @@ class OptionsManager {
     }
 
     modal.classList.remove('hidden');
+    modal.classList.add('active');
   }
 
   closeSnippetModal() {
-    document.getElementById('snippetModal')?.classList.add('hidden');
+    const modal = document.getElementById('snippetModal');
+    modal?.classList.remove('active');
+    modal?.classList.add('hidden');
   }
 
   async saveSnippetForm() {
@@ -261,12 +289,28 @@ class OptionsManager {
       category: existing?.category || 'General',
     };
 
-    await storage.saveSnippet(snippet);
-    await this.loadSnippets();
-    this.closeSnippetModal();
-    this.showToast('Snippet saved successfully', 'success');
+    try {
+      const result = await chrome.runtime.sendMessage({ type: 'SAVE_SNIPPET', snippet });
 
-    chrome.runtime.sendMessage({ type: 'SAVE_SNIPPET', snippet }).catch(() => undefined);
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to save snippet');
+      }
+
+      await this.loadSnippets();
+      this.closeSnippetModal();
+      this.showToast('Snippet saved successfully', 'success');
+    } catch (error) {
+      // Fallback to local write if background message is temporarily unavailable.
+      try {
+        await storage.saveSnippet(snippet);
+        await this.loadSnippets();
+        this.closeSnippetModal();
+        this.showToast('Snippet saved successfully', 'success');
+      } catch (fallbackError) {
+        console.error('Options save snippet error:', fallbackError);
+        this.showToast('Failed to save snippet. Please try again.', 'error');
+      }
+    }
   }
 
   editSnippet(id: string) {
@@ -405,12 +449,19 @@ class OptionsManager {
   async updateStats() {
     const totalSnippets = this.snippets.length;
     const totalExpansions = this.snippets.reduce((sum, snippet) => sum + snippet.usageCount, 0);
+    const activeSnippets = this.snippets.filter((snippet) => snippet.isActive).length;
 
     const totalEl = document.getElementById('totalSnippetsCount');
     const expansionsEl = document.getElementById('totalExpansions');
+    const heroTotalEl = document.getElementById('heroSnippetCount');
+    const heroActiveEl = document.getElementById('heroActiveCount');
+    const heroExpansionEl = document.getElementById('heroExpansionCount');
 
     if (totalEl) totalEl.textContent = totalSnippets.toString();
     if (expansionsEl) expansionsEl.textContent = totalExpansions.toString();
+    if (heroTotalEl) heroTotalEl.textContent = totalSnippets.toString();
+    if (heroActiveEl) heroActiveEl.textContent = activeSnippets.toString();
+    if (heroExpansionEl) heroExpansionEl.textContent = totalExpansions.toString();
   }
 
   checkWelcomeMode() {
