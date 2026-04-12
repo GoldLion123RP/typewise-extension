@@ -1,14 +1,23 @@
 param(
-    [string]$SourceFile = "assets\source_icon.png"
+    [string]$SourceFile = "assets/source_icon.png"
 )
 
 Add-Type -AssemblyName System.Drawing
 
-$iconsDir = "assets\icons"
+$scriptRoot = Split-Path -Parent $PSCommandPath
+
+if ([System.IO.Path]::IsPathRooted($SourceFile)) {
+    $resolvedSourceFile = $SourceFile
+}
+else {
+    $resolvedSourceFile = Join-Path $scriptRoot $SourceFile
+}
+
+$iconsDir = Join-Path $scriptRoot "assets/icons"
 New-Item -ItemType Directory -Force -Path $iconsDir | Out-Null
 
-if (-not (Test-Path $SourceFile)) {
-    throw "Source icon not found: $SourceFile"
+if (-not (Test-Path $resolvedSourceFile)) {
+    throw "Source icon not found: $resolvedSourceFile"
 }
 
 function Resize-Icon {
@@ -40,7 +49,7 @@ function Resize-Icon {
     $bmp.Dispose()
 }
 
-$sourceImage = [System.Drawing.Image]::FromFile((Resolve-Path $SourceFile).Path)
+$sourceImage = [System.Drawing.Image]::FromFile((Resolve-Path $resolvedSourceFile).Path)
 
 try {
     Resize-Icon -Source $sourceImage -Size 16 -OutputPath (Join-Path $iconsDir "icon-16.png")
@@ -48,7 +57,7 @@ try {
     Resize-Icon -Source $sourceImage -Size 48 -OutputPath (Join-Path $iconsDir "icon-48.png")
     Resize-Icon -Source $sourceImage -Size 128 -OutputPath (Join-Path $iconsDir "icon-128.png")
 
-    Write-Host "Created icon-16.png, icon-32.png, icon-48.png, icon-128.png from $SourceFile" -ForegroundColor Green
+    Write-Host "Created icon-16.png, icon-32.png, icon-48.png, icon-128.png from $resolvedSourceFile" -ForegroundColor Green
 }
 finally {
     $sourceImage.Dispose()
