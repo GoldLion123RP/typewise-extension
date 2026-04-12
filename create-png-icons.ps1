@@ -1,3 +1,4 @@
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseApprovedVerbs', '', Justification = 'False positive in this script context; helper uses approved naming.')]
 param(
     [string]$SourceFile = "assets/source_icon.png"
 )
