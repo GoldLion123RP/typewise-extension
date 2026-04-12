@@ -1,46 +1,55 @@
-# Create assets/icons directory
-New-Item -ItemType Directory -Force -Path "assets\icons"
+param(
+    [string]$SourceFile = "assets\source_icon.png"
+)
 
-# Function to create a simple colored PNG
 Add-Type -AssemblyName System.Drawing
 
-function Create-Icon {
-    param($size, $filename)
-    
-    $bmp = New-Object System.Drawing.Bitmap($size, $size)
-    $graphics = [System.Drawing.Graphics]::FromImage($bmp)
-    
-    # Purple gradient background
-    $brush = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
-        [System.Drawing.Point]::new(0, 0),
-        [System.Drawing.Point]::new($size, $size),
-        [System.Drawing.Color]::FromArgb(102, 126, 234),
-        [System.Drawing.Color]::FromArgb(118, 75, 162)
-    )
-    $graphics.FillRectangle($brush, 0, 0, $size, $size)
-    
-    # Draw "TW" text
-    $font = New-Object System.Drawing.Font("Arial", ($size / 3), [System.Drawing.FontStyle]::Bold)
-    $textBrush = [System.Drawing.Brushes]::White
-    $format = New-Object System.Drawing.StringFormat
-    $format.Alignment = [System.Drawing.StringAlignment]::Center
-    $format.LineAlignment = [System.Drawing.StringAlignment]::Center
-    
-    $graphics.DrawString("TW", $font, $textBrush, ($size / 2), ($size / 2), $format)
-    
-    # Save
-    $bmp.Save("assets\icons\$filename", [System.Drawing.Imaging.ImageFormat]::Png)
-    
-    $graphics.Dispose()
-    $bmp.Dispose()
-    
-    Write-Host "Created $filename"
+$iconsDir = "assets\icons"
+New-Item -ItemType Directory -Force -Path $iconsDir | Out-Null
+
+if (-not (Test-Path $SourceFile)) {
+    throw "Source icon not found: $SourceFile"
 }
 
-# Create all icon sizes
-Create-Icon 16 "icon-16.png"
-Create-Icon 32 "icon-32.png"
-Create-Icon 48 "icon-48.png"
-Create-Icon 128 "icon-128.png"
+function Resize-Icon {
+    param(
+        [System.Drawing.Image]$Source,
+        [int]$Size,
+        [string]$OutputPath
+    )
 
-Write-Host "`nAll icons created successfully!" -ForegroundColor Green
+    $bmp = New-Object System.Drawing.Bitmap($Size, $Size)
+    $graphics = [System.Drawing.Graphics]::FromImage($bmp)
+    $graphics.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
+    $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+    $graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+    $graphics.Clear([System.Drawing.Color]::Transparent)
+
+    # Center-crop to square, then resize
+    $sourceSize = [Math]::Min($Source.Width, $Source.Height)
+    $srcX = [int](($Source.Width - $sourceSize) / 2)
+    $srcY = [int](($Source.Height - $sourceSize) / 2)
+    $srcRect = New-Object System.Drawing.Rectangle($srcX, $srcY, $sourceSize, $sourceSize)
+    $destRect = New-Object System.Drawing.Rectangle(0, 0, $Size, $Size)
+
+    $graphics.DrawImage($Source, $destRect, $srcRect, [System.Drawing.GraphicsUnit]::Pixel)
+    $bmp.Save($OutputPath, [System.Drawing.Imaging.ImageFormat]::Png)
+
+    $graphics.Dispose()
+    $bmp.Dispose()
+}
+
+$sourceImage = [System.Drawing.Image]::FromFile((Resolve-Path $SourceFile).Path)
+
+try {
+    Resize-Icon -Source $sourceImage -Size 16 -OutputPath (Join-Path $iconsDir "icon-16.png")
+    Resize-Icon -Source $sourceImage -Size 32 -OutputPath (Join-Path $iconsDir "icon-32.png")
+    Resize-Icon -Source $sourceImage -Size 48 -OutputPath (Join-Path $iconsDir "icon-48.png")
+    Resize-Icon -Source $sourceImage -Size 128 -OutputPath (Join-Path $iconsDir "icon-128.png")
+
+    Write-Host "Created icon-16.png, icon-32.png, icon-48.png, icon-128.png from $SourceFile" -ForegroundColor Green
+}
+finally {
+    $sourceImage.Dispose()
+}

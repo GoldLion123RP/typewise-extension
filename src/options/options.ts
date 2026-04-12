@@ -440,7 +440,9 @@ class OptionsManager {
 
     const themeBtn = document.getElementById('themeToggle');
     if (themeBtn) {
-      themeBtn.textContent = isDark ? 'Light' : 'Dark';
+      themeBtn.textContent = isDark ? '☀' : '🌙';
+      themeBtn.setAttribute('aria-label', isDark ? 'Switch to light theme' : 'Switch to dark theme');
+      themeBtn.setAttribute('title', isDark ? 'Switch to light theme' : 'Switch to dark theme');
     }
   }
 

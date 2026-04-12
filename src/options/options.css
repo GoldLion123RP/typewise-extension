@@ -64,16 +64,19 @@
 .icon-btn {
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid var(--glass-border);
-  width: 40px;
-  height: 40px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 12px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 22px;
+  line-height: 1;
   transition: all 0.3s ease;
-  color: var(--text-secondary);
+  color: var(--text-primary);
+  font-weight: 700;
 }
 
 body.dark .icon-btn {
