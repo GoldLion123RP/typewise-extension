@@ -51,72 +51,117 @@ class PopupManager {
       s.tags?.some(t => (t || '').toLowerCase().includes(query))
     );
     
+    container.replaceChildren();
+
     if (filteredSnippets.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">📝</div>
-          <div class="empty-state-title">No snippets found</div>
-          <div class="empty-state-text">
-            ${filter ? 'Try a different search term' : 'Create your first snippet to get started'}
-          </div>
-        </div>
-      `;
+      const emptyState = document.createElement('div');
+      emptyState.className = 'empty-state';
+
+      const icon = document.createElement('div');
+      icon.className = 'empty-state-icon';
+      icon.textContent = '📝';
+
+      const title = document.createElement('div');
+      title.className = 'empty-state-title';
+      title.textContent = 'No snippets found';
+
+      const text = document.createElement('div');
+      text.className = 'empty-state-text';
+      text.textContent = filter ? 'Try a different search term' : 'Create your first snippet to get started';
+
+      emptyState.appendChild(icon);
+      emptyState.appendChild(title);
+      emptyState.appendChild(text);
+      container.appendChild(emptyState);
       return;
     }
-    
-    container.innerHTML = filteredSnippets.map(snippet => `
-      <div class="snippet-item" data-id="${snippet.id}">
-        <div class="snippet-header">
-          <span class="snippet-title">${this.escapeHtml(snippet.title || 'Untitled')}</span>
-          <span class="snippet-shortcut">${this.escapeHtml(snippet.shortcut || '')}</span>
-        </div>
-        <div class="snippet-content">${this.escapeHtml(snippet.content || '')}</div>
-        <div class="snippet-footer">
-          <div class="snippet-tags">
-            ${snippet.tags?.map(tag => `<span class="tag">${this.escapeHtml(tag)}</span>`).join('') || ''}
-          </div>
-          <div class="snippet-actions">
-            <button class="snippet-action edit-snippet" data-id="${snippet.id}" title="Edit">✏️</button>
-            <button class="snippet-action delete-snippet" data-id="${snippet.id}" title="Delete">🗑️</button>
-            <button class="snippet-action copy-snippet" data-id="${snippet.id}" title="Copy">📋</button>
-          </div>
-        </div>
-      </div>
-    `).join('');
-    
-    // Attach item event listeners
-    container.querySelectorAll('.edit-snippet').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = (btn as HTMLElement).dataset.id;
-        if (id) this.editSnippet(id);
+
+    for (const snippet of filteredSnippets) {
+      const item = document.createElement('div');
+      item.className = 'snippet-item';
+      item.dataset.id = snippet.id;
+
+      const header = document.createElement('div');
+      header.className = 'snippet-header';
+
+      const snippetTitle = document.createElement('span');
+      snippetTitle.className = 'snippet-title';
+      snippetTitle.textContent = snippet.title || 'Untitled';
+
+      const snippetShortcut = document.createElement('span');
+      snippetShortcut.className = 'snippet-shortcut';
+      snippetShortcut.textContent = snippet.shortcut || '';
+
+      header.appendChild(snippetTitle);
+      header.appendChild(snippetShortcut);
+
+      const content = document.createElement('div');
+      content.className = 'snippet-content';
+      content.textContent = snippet.content || '';
+
+      const footer = document.createElement('div');
+      footer.className = 'snippet-footer';
+
+      const tags = document.createElement('div');
+      tags.className = 'snippet-tags';
+      for (const tagText of snippet.tags || []) {
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = tagText;
+        tags.appendChild(tag);
+      }
+
+      const actions = document.createElement('div');
+      actions.className = 'snippet-actions';
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'snippet-action edit-snippet';
+      editBtn.dataset.id = snippet.id;
+      editBtn.title = 'Edit';
+      editBtn.textContent = '✏️';
+      editBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        this.editSnippet(snippet.id);
       });
-    });
-    
-    container.querySelectorAll('.delete-snippet').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const id = (btn as HTMLElement).dataset.id;
-        if (id && confirm('Delete this snippet?')) {
-          await this.deleteSnippet(id);
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'snippet-action delete-snippet';
+      deleteBtn.dataset.id = snippet.id;
+      deleteBtn.title = 'Delete';
+      deleteBtn.textContent = '🗑️';
+      deleteBtn.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        if (confirm('Delete this snippet?')) {
+          await this.deleteSnippet(snippet.id);
         }
       });
-    });
-    
-    container.querySelectorAll('.copy-snippet').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = (btn as HTMLElement).dataset.id;
-        if (id) this.copySnippet(id);
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'snippet-action copy-snippet';
+      copyBtn.dataset.id = snippet.id;
+      copyBtn.title = 'Copy';
+      copyBtn.textContent = '📋';
+      copyBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        this.copySnippet(snippet.id);
       });
-    });
-    
-    container.querySelectorAll('.snippet-item').forEach(item => {
+
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+      actions.appendChild(copyBtn);
+      footer.appendChild(tags);
+      footer.appendChild(actions);
+
+      item.appendChild(header);
+      item.appendChild(content);
+      item.appendChild(footer);
+
       item.addEventListener('click', () => {
-        const id = (item as HTMLElement).dataset.id;
-        if (id) this.insertSnippet(id);
+        this.insertSnippet(snippet.id);
       });
-    });
+
+      container.appendChild(item);
+    }
   }
   
   attachEventListeners() {

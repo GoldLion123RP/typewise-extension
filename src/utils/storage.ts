@@ -3,6 +3,7 @@ import CryptoJS from 'crypto-js';
 import { StorageData, Snippet, User, UserSettings } from '../types';
 
 const STORAGE_KEY = 'typewise_data';
+const ENCRYPTION_KEY_STORAGE_KEY = 'typewise_encryption_key';
 const LEGACY_STORAGE_KEYS = ['typewiseData', 'typewise-data', 'typewise_storage'] as const;
 const LEGACY_SNIPPET_KEYS = [
   'snippets',
@@ -12,9 +13,16 @@ const LEGACY_SNIPPET_KEYS = [
   'savedSnippets',
   'snippets_v1',
 ] as const;
+const LEGACY_ENCRYPTION_KEYS = ['typewise:stable:v1', 'typewise:stable:v0', 'typewise-default-key'] as const;
+const MAX_SHORTCUT_LENGTH = 64;
+const MAX_TITLE_LENGTH = 120;
+const MAX_CONTENT_LENGTH = 12000;
+const MAX_TAG_LENGTH = 40;
+const MAX_TAG_COUNT = 20;
 
 class StorageManager {
   private writeQueue: Promise<void> = Promise.resolve();
+  private encryptionKeyCache: string | null = null;
 
   private asRecord(value: unknown): Record<string, unknown> {
     return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
@@ -168,20 +176,53 @@ class StorageManager {
     });
   }
 
-  private getEncryptionKey(): string {
-    // Keep key stable across reinstalls/builds to avoid losing decryptability.
-    return 'typewise:stable:v1';
+  private generateRandomKey(): string {
+    const bytes = new Uint8Array(32);
+    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+      crypto.getRandomValues(bytes);
+    } else {
+      for (let i = 0; i < bytes.length; i += 1) {
+        bytes[i] = Math.floor(Math.random() * 256);
+      }
+    }
+
+    return Array.from(bytes)
+      .map((value) => value.toString(16).padStart(2, '0'))
+      .join('');
   }
 
-  private getDecryptionKeys(): string[] {
+  private async getOrCreateEncryptionKey(): Promise<string> {
+    if (this.encryptionKeyCache) {
+      return this.encryptionKeyCache;
+    }
+
+    const existing = this.asRecord(await this.localGet(ENCRYPTION_KEY_STORAGE_KEY))[ENCRYPTION_KEY_STORAGE_KEY];
+    if (typeof existing === 'string' && existing.length >= 32) {
+      this.encryptionKeyCache = existing;
+      return existing;
+    }
+
+    const generatedKey = this.generateRandomKey();
+    this.encryptionKeyCache = generatedKey;
+
+    try {
+      await this.localSet({ [ENCRYPTION_KEY_STORAGE_KEY]: generatedKey });
+    } catch (error) {
+      console.warn('Unable to persist generated encryption key:', error);
+    }
+
+    return generatedKey;
+  }
+
+  private async getDecryptionKeys(): Promise<string[]> {
+    const runtimeLegacyKey = chrome?.runtime?.id ? `typewise:${chrome.runtime.id}:v1` : '';
     return Array.from(
       new Set([
-        this.getEncryptionKey(),
-        `typewise:${chrome.runtime.id}:v1`,
-        'typewise:stable:v0',
-        'typewise-default-key',
+        await this.getOrCreateEncryptionKey(),
+        runtimeLegacyKey,
+        ...LEGACY_ENCRYPTION_KEYS,
       ]),
-    );
+    ).filter(Boolean);
   }
 
   async getAll(): Promise<StorageData> {
@@ -190,7 +231,7 @@ class StorageManager {
       const encryptedLocal = result[STORAGE_KEY];
 
       if (typeof encryptedLocal === 'string' && encryptedLocal.length > 0) {
-        const decryptedLocal = this.decrypt(encryptedLocal);
+        const decryptedLocal = await this.decrypt(encryptedLocal);
         if (decryptedLocal) {
           const normalized = this.normalizeStorageData(decryptedLocal);
           await this.ensurePlaintextMirrors(normalized);
@@ -203,7 +244,7 @@ class StorageManager {
         const candidate = legacyEncryptedResult[key];
 
         if (typeof candidate === 'string' && candidate.length > 0) {
-          const decryptedLegacy = this.decrypt(candidate);
+          const decryptedLegacy = await this.decrypt(candidate);
           if (decryptedLegacy) {
             const normalizedLegacy = this.normalizeStorageData(decryptedLegacy);
             await this.saveAll(normalizedLegacy);
@@ -221,7 +262,7 @@ class StorageManager {
       const syncResult = this.asRecord(await this.syncGet(STORAGE_KEY));
       const encryptedSync = syncResult[STORAGE_KEY];
       if (typeof encryptedSync === 'string' && encryptedSync.length > 0) {
-        const decryptedSync = this.decrypt(encryptedSync);
+        const decryptedSync = await this.decrypt(encryptedSync);
         if (decryptedSync) {
           const normalizedSync = this.normalizeStorageData(decryptedSync);
           await this.saveAll(normalizedSync);
@@ -259,7 +300,7 @@ class StorageManager {
 
   async saveAll(data: StorageData): Promise<void> {
     const normalized = this.normalizeStorageData(data);
-    const encrypted = this.encrypt(normalized);
+    const encrypted = await this.encrypt(normalized);
 
     try {
       await this.localSet({
@@ -308,21 +349,10 @@ class StorageManager {
     await this.enqueueWrite(async () => {
       const data = await this.getAll();
       const snippets = this.mergeSnippets(this.sanitizeSnippets(data.snippets), await this.getLegacySnippetCandidates());
-      const normalized = this.normalizeSnippet(snippet, snippets.length) || {
-        id: snippet.id || `snippet-${Date.now()}-${snippets.length}`,
-        title: (snippet.title || '').trim() || `Snippet ${snippets.length + 1}`,
-        shortcut: (snippet.shortcut || '').trim(),
-        content: (snippet.content || '').trim(),
-        category: (snippet.category || 'General').trim(),
-        tags: Array.isArray(snippet.tags) ? snippet.tags.filter((tag) => typeof tag === 'string') : [],
-        usageCount: typeof snippet.usageCount === 'number' ? Math.max(0, snippet.usageCount) : 0,
-        createdAt: snippet.createdAt || new Date().toISOString(),
-        updatedAt: snippet.updatedAt || new Date().toISOString(),
-        isActive: snippet.isActive !== false,
-      };
+      const normalized = this.normalizeSnippet(snippet, snippets.length);
 
-      if (!normalized.shortcut || !normalized.content) {
-        throw new Error('Snippet must include shortcut and content');
+      if (!normalized) {
+        throw new Error('Snippet is invalid. Ensure title, shortcut, and content are valid.');
       }
 
       const index = snippets.findIndex((s) => s.id === normalized.id);
@@ -380,12 +410,13 @@ class StorageManager {
     });
   }
 
-  private encrypt(data: StorageData): string {
-    return CryptoJS.AES.encrypt(JSON.stringify(data), this.getEncryptionKey()).toString();
+  private async encrypt(data: StorageData): Promise<string> {
+    const encryptionKey = await this.getOrCreateEncryptionKey();
+    return CryptoJS.AES.encrypt(JSON.stringify(data), encryptionKey).toString();
   }
 
-  private decrypt(encryptedData: string): StorageData | null {
-    for (const key of this.getDecryptionKeys()) {
+  private async decrypt(encryptedData: string): Promise<StorageData | null> {
+    for (const key of await this.getDecryptionKeys()) {
       try {
         const decrypted = CryptoJS.AES.decrypt(encryptedData, key).toString(CryptoJS.enc.Utf8);
         if (!decrypted) {
@@ -533,21 +564,32 @@ class StorageManager {
     if (!value || typeof value !== 'object') return null;
     const item = value as Record<string, unknown>;
 
-    const shortcut = this.pickString(item.shortcut, item.trigger, item.abbr, item.key, item.keyword, item.code);
-    const content = this.pickString(item.content, item.text, item.value, item.body, item.snippet, item.expansion, item.phrase, item.template);
-    if (!shortcut || !content) return null;
+    const rawShortcut = this.pickString(item.shortcut, item.trigger, item.abbr, item.key, item.keyword, item.code);
+    const rawContent = this.pickString(item.content, item.text, item.value, item.body, item.snippet, item.expansion, item.phrase, item.template);
+    if (!rawShortcut || !rawContent) return null;
+
+    const shortcut = rawShortcut.trim().slice(0, MAX_SHORTCUT_LENGTH);
+    const content = rawContent.slice(0, MAX_CONTENT_LENGTH);
+    if (!shortcut || !content || /\s/.test(shortcut)) return null;
 
     const now = new Date().toISOString();
-    const tags = Array.isArray(item.tags)
+    const tags = (Array.isArray(item.tags)
       ? item.tags.filter((tag): tag is string => typeof tag === 'string').map((tag) => tag.trim()).filter(Boolean)
       : this.pickString(item.tags)
           ?.split(',')
           .map((tag) => tag.trim())
-          .filter(Boolean) || [];
+          .filter(Boolean) || [])
+      .slice(0, MAX_TAG_COUNT)
+      .map((tag) => tag.slice(0, MAX_TAG_LENGTH));
+
+    const title = (this.pickString(item.title, item.name, item.label, item.shortcut) || `Snippet ${index + 1}`).slice(
+      0,
+      MAX_TITLE_LENGTH,
+    );
 
     return {
       id: this.pickString(item.id, item._id, item.uuid) || `snippet-${Date.now()}-${index}`,
-      title: this.pickString(item.title, item.name, item.label, item.shortcut) || `Snippet ${index + 1}`,
+      title,
       shortcut,
       content,
       category: this.pickString(item.category, item.group, item.type) || 'General',

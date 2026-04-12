@@ -2,6 +2,8 @@
 import { storage } from '../utils/storage';
 import { gistManager } from '../api/gistManager';
 
+const AUTO_SYNC_INTERVAL_MS = 30 * 60 * 1000;
+
 class BackgroundService {
   constructor() {
     this.init();
@@ -162,7 +164,7 @@ class BackgroundService {
       if (user.settings.autoBackup && user.settings.syncEnabled && user.githubToken) {
         await this.syncWithGitHub();
       }
-    }, 30 * 60 * 1000);
+    }, AUTO_SYNC_INTERVAL_MS);
   }
 
   async repairStorageCache() {
@@ -194,69 +196,9 @@ class BackgroundService {
   showQuickSearch(tabId?: number) {
     if (!tabId) return;
 
-    const injectQuickSearch = () => {
-      const existing = document.getElementById('typewise-quick-search');
-      if (existing) {
-        existing.remove();
-        return;
-      }
-
-      const modal = document.createElement('div');
-      modal.id = 'typewise-quick-search';
-      modal.innerHTML = `
-        <div style="
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: white;
-          padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-          z-index: 999999;
-          min-width: 400px;
-        ">
-          <input type="text" placeholder="Search snippets..." style="
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-          " autofocus>
-          <div id="typewise-results"></div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-
-      const input = modal.querySelector('input');
-      input?.focus();
-
-      const closeModal = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-          modal.remove();
-          document.removeEventListener('keydown', closeModal);
-        }
-      };
-
-      document.addEventListener('keydown', closeModal);
-    };
-
-    if (chrome.scripting?.executeScript) {
-      chrome.scripting.executeScript({
-        target: { tabId },
-        func: injectQuickSearch
-      });
-      return;
-    }
-
-    if (chrome.tabs.executeScript) {
-      chrome.tabs.executeScript(tabId, {
-        code: `(${injectQuickSearch.toString()})();`
-      });
-      return;
-    }
-
-    console.warn('No script injection API is available in this browser runtime.');
+    chrome.tabs.sendMessage(tabId, { type: 'SHOW_QUICK_SEARCH' }).catch(() => {
+      console.warn('Unable to open quick search on this tab.');
+    });
   }
 
   createSnippetFromSelection(text: string) {
