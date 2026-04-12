@@ -2,18 +2,171 @@
 import CryptoJS from 'crypto-js';
 import { StorageData, Snippet, User, UserSettings } from '../types';
 
+const STORAGE_KEY = 'typewise_data';
+const LEGACY_STORAGE_KEYS = ['typewiseData', 'typewise-data', 'typewise_storage'] as const;
+const LEGACY_SNIPPET_KEYS = [
+  'snippets',
+  'typewise_snippets',
+  'typewiseSnippets',
+  'snippet_list',
+  'savedSnippets',
+  'snippets_v1',
+] as const;
+
 class StorageManager {
-  private readonly STORAGE_KEY = 'typewise_data';
-  private readonly LEGACY_STORAGE_KEYS = ['typewiseData', 'typewise-data', 'typewise_storage'];
-  private readonly LEGACY_SNIPPET_KEYS = [
-    'snippets',
-    'typewise_snippets',
-    'typewiseSnippets',
-    'snippet_list',
-    'savedSnippets',
-    'snippets_v1',
-  ];
   private writeQueue: Promise<void> = Promise.resolve();
+
+  private asRecord(value: unknown): Record<string, unknown> {
+    return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  }
+
+  private async localGet(keys: string | string[]): Promise<Record<string, unknown>> {
+    const area = chrome?.storage?.local;
+    if (!area || typeof area.get !== 'function') {
+      return {};
+    }
+
+    const getAny = area.get as unknown as (
+      keys: string | string[],
+      callback?: (items: Record<string, unknown>) => void,
+    ) => unknown;
+
+    try {
+      const maybePromise = getAny.call(area, keys);
+      if (maybePromise && typeof (maybePromise as Promise<unknown>).then === 'function') {
+        const data = await (maybePromise as Promise<unknown>);
+        return this.asRecord(data);
+      }
+    } catch {
+      // Fall back to callback form.
+    }
+
+    return await new Promise<Record<string, unknown>>((resolve, reject) => {
+      try {
+        getAny.call(area, keys, (items: Record<string, unknown>) => {
+          const lastError = chrome.runtime.lastError;
+          if (lastError) {
+            reject(new Error(lastError.message));
+            return;
+          }
+          resolve(this.asRecord(items));
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  private async syncGet(keys: string | string[]): Promise<Record<string, unknown>> {
+    const area = chrome?.storage?.sync;
+    if (!area || typeof area.get !== 'function') {
+      return {};
+    }
+
+    const getAny = area.get as unknown as (
+      keys: string | string[],
+      callback?: (items: Record<string, unknown>) => void,
+    ) => unknown;
+
+    try {
+      const maybePromise = getAny.call(area, keys);
+      if (maybePromise && typeof (maybePromise as Promise<unknown>).then === 'function') {
+        const data = await (maybePromise as Promise<unknown>);
+        return this.asRecord(data);
+      }
+    } catch {
+      // Fall back to callback form.
+    }
+
+    return await new Promise<Record<string, unknown>>((resolve, reject) => {
+      try {
+        getAny.call(area, keys, (items: Record<string, unknown>) => {
+          const lastError = chrome.runtime.lastError;
+          if (lastError) {
+            reject(new Error(lastError.message));
+            return;
+          }
+          resolve(this.asRecord(items));
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  private async localSet(items: Record<string, unknown>): Promise<void> {
+    const area = chrome?.storage?.local;
+    if (!area || typeof area.set !== 'function') {
+      return;
+    }
+
+    const setAny = area.set as unknown as (
+      items: Record<string, unknown>,
+      callback?: () => void,
+    ) => unknown;
+
+    try {
+      const maybePromise = setAny.call(area, items);
+      if (maybePromise && typeof (maybePromise as Promise<unknown>).then === 'function') {
+        await (maybePromise as Promise<unknown>);
+        return;
+      }
+    } catch {
+      // Fall back to callback form.
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      try {
+        setAny.call(area, items, () => {
+          const lastError = chrome.runtime.lastError;
+          if (lastError) {
+            reject(new Error(lastError.message));
+            return;
+          }
+          resolve();
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  private async syncSet(items: Record<string, unknown>): Promise<void> {
+    const area = chrome?.storage?.sync;
+    if (!area || typeof area.set !== 'function') {
+      return;
+    }
+
+    const setAny = area.set as unknown as (
+      items: Record<string, unknown>,
+      callback?: () => void,
+    ) => unknown;
+
+    try {
+      const maybePromise = setAny.call(area, items);
+      if (maybePromise && typeof (maybePromise as Promise<unknown>).then === 'function') {
+        await (maybePromise as Promise<unknown>);
+        return;
+      }
+    } catch {
+      // Fall back to callback form.
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      try {
+        setAny.call(area, items, () => {
+          const lastError = chrome.runtime.lastError;
+          if (lastError) {
+            reject(new Error(lastError.message));
+            return;
+          }
+          resolve();
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
 
   private getEncryptionKey(): string {
     // Keep key stable across reinstalls/builds to avoid losing decryptability.
@@ -33,8 +186,8 @@ class StorageManager {
 
   async getAll(): Promise<StorageData> {
     try {
-      const result = await chrome.storage.local.get(this.STORAGE_KEY);
-      const encryptedLocal = result[this.STORAGE_KEY];
+      const result = this.asRecord(await this.localGet(STORAGE_KEY));
+      const encryptedLocal = result[STORAGE_KEY];
 
       if (typeof encryptedLocal === 'string' && encryptedLocal.length > 0) {
         const decryptedLocal = this.decrypt(encryptedLocal);
@@ -45,8 +198,8 @@ class StorageManager {
         }
       }
 
-      const legacyEncryptedResult = await chrome.storage.local.get(this.LEGACY_STORAGE_KEYS);
-      for (const key of this.LEGACY_STORAGE_KEYS) {
+      const legacyEncryptedResult = this.asRecord(await this.localGet([...LEGACY_STORAGE_KEYS]));
+      for (const key of LEGACY_STORAGE_KEYS) {
         const candidate = legacyEncryptedResult[key];
 
         if (typeof candidate === 'string' && candidate.length > 0) {
@@ -65,8 +218,8 @@ class StorageManager {
         }
       }
 
-      const syncResult = await chrome.storage.sync.get(this.STORAGE_KEY);
-      const encryptedSync = syncResult[this.STORAGE_KEY];
+      const syncResult = this.asRecord(await this.syncGet(STORAGE_KEY));
+      const encryptedSync = syncResult[STORAGE_KEY];
       if (typeof encryptedSync === 'string' && encryptedSync.length > 0) {
         const decryptedSync = this.decrypt(encryptedSync);
         if (decryptedSync) {
@@ -76,7 +229,8 @@ class StorageManager {
         }
       }
 
-      const localFallback = await chrome.storage.local.get(['settings']);
+      const localFallback = this.asRecord(await this.localGet(['settings']));
+      const fallbackSettings = this.asRecord(localFallback.settings);
       const localSnippets = await this.getLegacySnippetCandidates();
       if (localSnippets.length > 0) {
         const defaults = this.getDefaultData();
@@ -87,7 +241,7 @@ class StorageManager {
             ...defaults.user,
             settings: {
               ...defaults.user.settings,
-              ...(localFallback.settings || {}),
+              ...fallbackSettings,
             },
           },
         };
@@ -108,8 +262,8 @@ class StorageManager {
     const encrypted = this.encrypt(normalized);
 
     try {
-      await chrome.storage.local.set({
-        [this.STORAGE_KEY]: encrypted,
+      await this.localSet({
+        [STORAGE_KEY]: encrypted,
         snippets: normalized.snippets,
         settings: normalized.user.settings,
       });
@@ -120,7 +274,7 @@ class StorageManager {
 
     if (normalized.user.settings.syncEnabled) {
       try {
-        await chrome.storage.sync.set({ [this.STORAGE_KEY]: encrypted });
+        await this.syncSet({ [STORAGE_KEY]: encrypted });
       } catch (error) {
         console.warn('Unable to sync encrypted storage to chrome.storage.sync:', error);
       }
@@ -129,7 +283,7 @@ class StorageManager {
 
   async getSnippets(): Promise<Snippet[]> {
     const data = await this.getAll();
-    const localPrimary = await chrome.storage.local.get('snippets');
+    const localPrimary = this.asRecord(await this.localGet('snippets'));
     const localPrimarySnippets = this.sanitizeSnippets(localPrimary.snippets);
     const localSnippets = this.mergeSnippets(await this.getLegacySnippetCandidates(), localPrimarySnippets);
     const encryptedSnippets = this.sanitizeSnippets(data.snippets);
@@ -137,7 +291,7 @@ class StorageManager {
 
     if (mergedSnippets.length > 0) {
       if (this.haveSnippetDifferences(localPrimarySnippets, mergedSnippets)) {
-        await chrome.storage.local.set({ snippets: mergedSnippets });
+        await this.localSet({ snippets: mergedSnippets });
       }
 
       if (this.haveSnippetDifferences(encryptedSnippets, mergedSnippets)) {
@@ -179,7 +333,7 @@ class StorageManager {
       }
 
       // Plaintext snippets are the primary runtime store and must always persist.
-      await chrome.storage.local.set({ snippets });
+      await this.localSet({ snippets });
 
       // Keep encrypted aggregate synchronized best-effort.
       try {
@@ -195,7 +349,7 @@ class StorageManager {
       const data = await this.getAll();
       const snippets = this.sanitizeSnippets(data.snippets).filter((s) => s.id !== id);
 
-      await chrome.storage.local.set({ snippets });
+      await this.localSet({ snippets });
 
       try {
         await this.saveAll({ ...data, snippets });
@@ -476,7 +630,7 @@ class StorageManager {
 
   private async ensurePlaintextMirrors(data: StorageData): Promise<void> {
     try {
-      await chrome.storage.local.set({
+      await this.localSet({
         snippets: data.snippets,
         settings: data.user.settings,
       });
@@ -486,10 +640,15 @@ class StorageManager {
   }
 
   private async getLegacySnippetCandidates(): Promise<Snippet[]> {
-    const result = await chrome.storage.local.get(this.LEGACY_SNIPPET_KEYS);
+    const keys = [...LEGACY_SNIPPET_KEYS];
+    if (keys.length === 0) {
+      return [];
+    }
+
+    const result = this.asRecord(await this.localGet(keys));
     let all: Snippet[] = [];
 
-    for (const key of this.LEGACY_SNIPPET_KEYS) {
+    for (const key of keys) {
       all = all.concat(this.sanitizeSnippets(result[key]));
     }
 

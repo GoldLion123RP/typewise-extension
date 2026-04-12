@@ -7,6 +7,42 @@ class ContentScriptManager {
   private lastKeyTime = 0;
   private keyBuffer = '';
 
+  private asRecord(value: unknown): Record<string, unknown> {
+    return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  }
+
+  private async localGet(keys: string | string[]): Promise<Record<string, unknown>> {
+    const getAny = chrome.storage.local.get as unknown as (
+      keys: string | string[],
+      callback?: (items: Record<string, unknown>) => void,
+    ) => unknown;
+
+    try {
+      const maybePromise = getAny.call(chrome.storage.local, keys);
+      if (maybePromise && typeof (maybePromise as Promise<unknown>).then === 'function') {
+        const data = await (maybePromise as Promise<unknown>);
+        return this.asRecord(data);
+      }
+    } catch {
+      // Fall back to callback form.
+    }
+
+    return await new Promise<Record<string, unknown>>((resolve, reject) => {
+      try {
+        getAny.call(chrome.storage.local, keys, (items: Record<string, unknown>) => {
+          const lastError = chrome.runtime.lastError;
+          if (lastError) {
+            reject(new Error(lastError.message));
+            return;
+          }
+          resolve(this.asRecord(items));
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
   constructor() {
     this.init();
   }
@@ -31,10 +67,11 @@ class ContentScriptManager {
 
   async loadSettings() {
     try {
-      const result = await chrome.storage.local.get(['settings']);
+      const result = await this.localGet(['settings']);
       if (result.settings) {
-        this.triggerKey = result.settings.triggerKey || '/';
-        console.log('TypeWise: Settings loaded', result.settings);
+        const settings = result.settings as Record<string, unknown>;
+        this.triggerKey = (typeof settings.triggerKey === 'string' && settings.triggerKey) || '/';
+        console.log('TypeWise: Settings loaded', settings);
       }
     } catch (e) {
       console.error('TypeWise: Error loading settings', e);
@@ -47,8 +84,8 @@ class ContentScriptManager {
       if (response?.success && Array.isArray(response.data)) {
         this.snippets = response.data;
       } else {
-        const result = await chrome.storage.local.get(['snippets']);
-        this.snippets = result.snippets || [];
+        const result = await this.localGet(['snippets']);
+        this.snippets = Array.isArray(result.snippets) ? (result.snippets as Snippet[]) : [];
       }
       console.log(`TypeWise: Loaded ${this.snippets.length} snippets`);
     } catch (e) {
