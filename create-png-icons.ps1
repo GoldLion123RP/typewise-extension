@@ -22,11 +22,16 @@ if (-not (Test-Path $resolvedSourceFile)) {
 }
 
 function New-IconAsset {
+    [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Low')]
     param(
         [System.Drawing.Image]$Source,
         [int]$Size,
         [string]$OutputPath
     )
+
+    if (-not $PSCmdlet.ShouldProcess($OutputPath, "Create ${Size}x${Size} icon asset")) {
+        return
+    }
 
     $bmp = New-Object System.Drawing.Bitmap($Size, $Size)
     $graphics = [System.Drawing.Graphics]::FromImage($bmp)
@@ -58,7 +63,7 @@ try {
     New-IconAsset -Source $sourceImage -Size 48 -OutputPath (Join-Path $iconsDir "icon-48.png")
     New-IconAsset -Source $sourceImage -Size 128 -OutputPath (Join-Path $iconsDir "icon-128.png")
 
-    Write-Host "Created icon-16.png, icon-32.png, icon-48.png, icon-128.png from $resolvedSourceFile" -ForegroundColor Green
+    Write-Output "Created icon-16.png, icon-32.png, icon-48.png, icon-128.png from $resolvedSourceFile"
 }
 finally {
     $sourceImage.Dispose()
