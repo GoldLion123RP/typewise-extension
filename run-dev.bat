@@ -1,0 +1,3 @@
+@echo off
+echo Starting TypeWise development server...
+npm run dev

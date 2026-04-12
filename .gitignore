@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+*.zip
+*.crx
+*.xpi
+*.signed.xpi
+
+# Firefox/web-ext artifacts
+.web-ext-artifacts/
+web-ext-artifacts/
+.mozilla/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+.envrc
+config.js
+secrets.json
+
+# IDE
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# GitHub metadata
+.github/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+debug.log
+*.log
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+temp/
+tmp/
+.cache/
+.eslintcache
+
+# Private keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+private-key.json
+
+# Local package manager auth
+.npmrc
+.pnpmrc
+
+# OS files
+desktop.ini
+.Spotlight-V100
+.Trashes

@@ -1,0 +1,74 @@
+{
+  "manifest_version": 3,
+  "name": "TypeWise - Smart Text Expansion",
+  "short_name": "TypeWise",
+  "version": "1.0.0",
+  "description": "Boost productivity with smart text expansion, snippets, and templates. Syncs with GitHub Gists.",
+  "author": "Rahul Pal",
+  "homepage_url": "https://github.com/GoldLion123RP/typewise-extension",
+  "permissions": [
+    "storage",
+    "contextMenus",
+    "activeTab",
+    "clipboardWrite",
+    "identity",
+    "notifications",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://api.github.com/*",
+    "https://gist.github.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon-16.png",
+      "32": "assets/icons/icon-32.png",
+      "48": "assets/icons/icon-48.png",
+      "128": "assets/icons/icon-128.png"
+    },
+    "default_title": "TypeWise - Click to manage snippets"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "16": "assets/icons/icon-16.png",
+    "32": "assets/icons/icon-32.png",
+    "48": "assets/icons/icon-48.png",
+    "128": "assets/icons/icon-128.png"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Space",
+        "mac": "Command+Shift+Space"
+      },
+      "description": "Open TypeWise"
+    },
+    "quick-search": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+K",
+        "mac": "Command+Shift+K"
+      },
+      "description": "Quick search snippets"
+    }
+  }
+}

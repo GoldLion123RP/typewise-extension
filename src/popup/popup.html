@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeWise</title>
+  <link rel="stylesheet" href="../styles/common.css">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  
+  <div id="app" class="popup-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <img src="../assets/icons/icon-48.png" alt="TypeWise">
+        <h1>TypeWise</h1>
+      </div>
+      <div class="header-actions">
+        <button id="themeToggle" class="icon-btn" title="Toggle theme">
+          🌙
+        </button>
+        <button id="settingsBtn" class="icon-btn" title="Settings">
+          ⚙️
+        </button>
+      </div>
+    </header>
+
+    <!-- Search Bar -->
+    <div class="search-container">
+      <input 
+        type="text" 
+        id="searchInput" 
+        placeholder="Search snippets..." 
+        class="search-input"
+      >
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="stats-bar">
+      <div class="stat">
+        <span class="stat-value" id="totalSnippets">0</span>
+        <span class="stat-label">Snippets</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="todayUsage">0</span>
+        <span class="stat-label">Used Today</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="syncStatus">●</span>
+        <span class="stat-label">Sync</span>
+      </div>
+    </div>
+
+    <!-- Snippets List -->
+    <div class="snippets-container">
+      <div class="snippets-header">
+        <h2>Your Snippets</h2>
+        <button id="addSnippetBtn" class="btn btn-primary">
+          + New Snippet
+        </button>
+      </div>
+      
+      <div id="snippetsList" class="snippets-list">
+        <!-- Snippets will be loaded here -->
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button id="syncBtn" class="action-btn" title="Sync with GitHub">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+        </svg>
+        Sync
+      </button>
+      <button id="importBtn" class="action-btn" title="Import snippets">
+        📥 Import
+      </button>
+      <button id="exportBtn" class="action-btn" title="Export snippets">
+        📤 Export
+      </button>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="snippetModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalTitle">Add New Snippet</h3>
+          <button class="close-btn" id="closeModalBtn">×</button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="snippetTitle">Title</label>
+            <input type="text" id="snippetTitle" placeholder="e.g., Email Signature">
+          </div>
+          
+          <div class="form-group">
+            <label for="snippetShortcut">Shortcut</label>
+            <input type="text" id="snippetShortcut" placeholder="e.g., /sig">
+          </div>
+          
+          <div class="form-group">
+            <label for="snippetContent">Content</label>
+            <textarea id="snippetContent" rows="4" placeholder="Type your snippet content here..."></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label for="snippetCategory">Category</label>
+            <select id="snippetCategory">
+              <option value="General">General</option>
+              <option value="Email">Email</option>
+              <option value="Code">Code</option>
+              <option value="Business">Business</option>
+              <option value="Personal">Personal</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="snippetTags">Tags (comma separated)</label>
+            <input type="text" id="snippetTags" placeholder="e.g., email, signature, work">
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button id="cancelBtn" class="btn btn-secondary">Cancel</button>
+          <button id="saveSnippetBtn" class="btn btn-primary">Save Snippet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
