@@ -43,8 +43,13 @@ class ContentScriptManager {
 
   async loadSnippets() {
     try {
-      const result = await chrome.storage.local.get(['snippets']);
-      this.snippets = result.snippets || [];
+      const response = await chrome.runtime.sendMessage({ type: 'GET_SNIPPETS' });
+      if (response?.success && Array.isArray(response.data)) {
+        this.snippets = response.data;
+      } else {
+        const result = await chrome.storage.local.get(['snippets']);
+        this.snippets = result.snippets || [];
+      }
       console.log(`TypeWise: Loaded ${this.snippets.length} snippets`);
     } catch (e) {
       console.error('TypeWise: Error loading snippets', e);

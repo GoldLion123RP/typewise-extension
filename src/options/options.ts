@@ -48,7 +48,17 @@ class OptionsManager {
   }
 
   async loadSnippets() {
-    this.snippets = await storage.getSnippets();
+    try {
+      const result = await chrome.runtime.sendMessage({ type: 'GET_SNIPPETS' });
+      if (result?.success && Array.isArray(result.data)) {
+        this.snippets = result.data;
+      } else {
+        this.snippets = await storage.getSnippets();
+      }
+    } catch {
+      this.snippets = await storage.getSnippets();
+    }
+
     this.renderSnippets();
     await this.updateStats();
   }
@@ -337,7 +347,8 @@ class OptionsManager {
         this.showToast('Snippet saved successfully', 'success');
       } catch (fallbackError) {
         console.error('Options save snippet error:', fallbackError);
-        this.showToast('Failed to save snippet. Please try again.', 'error');
+        const message = fallbackError instanceof Error ? fallbackError.message : 'Failed to save snippet. Please try again.';
+        this.showToast(message, 'error');
       }
     }
   }

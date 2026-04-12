@@ -8,6 +8,8 @@ class BackgroundService {
   }
 
   async init() {
+    await this.repairStorageCache();
+
     // Extension installed or updated
     chrome.runtime.onInstalled.addListener(this.handleInstalled.bind(this));
 
@@ -161,6 +163,20 @@ class BackgroundService {
         await this.syncWithGitHub();
       }
     }, 30 * 60 * 1000);
+  }
+
+  async repairStorageCache() {
+    try {
+      const snippets = await storage.getSnippets();
+      const user = await storage.getUser();
+
+      await chrome.storage.local.set({
+        snippets,
+        settings: user.settings,
+      });
+    } catch (error) {
+      console.warn('TypeWise: storage cache warmup failed:', error);
+    }
   }
 
   notifyContentScripts(type: string, data?: any) {
