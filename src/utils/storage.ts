@@ -6,17 +6,61 @@ class StorageManager {
   private readonly STORAGE_KEY = 'typewise_data';
 
   private getEncryptionKey(): string {
-    // Browser extensions cannot keep true client-side secrets.
-    // Use a deterministic key tied to this extension installation.
-    return `typewise:${chrome.runtime.id}:v1`;
+    // Keep key stable across reinstalls/builds to avoid losing decryptability.
+    return 'typewise:stable:v1';
+  }
+
+  private getDecryptionKeys(): string[] {
+    return Array.from(
+      new Set([
+        this.getEncryptionKey(),
+        `typewise:${chrome.runtime.id}:v1`,
+        'typewise:stable:v0',
+        'typewise-default-key',
+      ]),
+    );
   }
 
   async getAll(): Promise<StorageData> {
     try {
       const result = await chrome.storage.local.get(this.STORAGE_KEY);
-      if (result[this.STORAGE_KEY]) {
-        return this.normalizeStorageData(this.decrypt(result[this.STORAGE_KEY]));
+      const encryptedLocal = result[this.STORAGE_KEY];
+
+      if (typeof encryptedLocal === 'string' && encryptedLocal.length > 0) {
+        const decryptedLocal = this.decrypt(encryptedLocal);
+        if (decryptedLocal) {
+          return this.normalizeStorageData(decryptedLocal);
+        }
       }
+
+      const syncResult = await chrome.storage.sync.get(this.STORAGE_KEY);
+      const encryptedSync = syncResult[this.STORAGE_KEY];
+      if (typeof encryptedSync === 'string' && encryptedSync.length > 0) {
+        const decryptedSync = this.decrypt(encryptedSync);
+        if (decryptedSync) {
+          const normalizedSync = this.normalizeStorageData(decryptedSync);
+          await this.saveAll(normalizedSync);
+          return normalizedSync;
+        }
+      }
+
+      const localFallback = await chrome.storage.local.get(['snippets', 'settings']);
+      const localSnippets = this.sanitizeSnippets(localFallback.snippets);
+      if (localSnippets.length > 0) {
+        const defaults = this.getDefaultData();
+        return {
+          ...defaults,
+          snippets: localSnippets,
+          user: {
+            ...defaults.user,
+            settings: {
+              ...defaults.user.settings,
+              ...(localFallback.settings || {}),
+            },
+          },
+        };
+      }
+
       return this.getDefaultData();
     } catch (error) {
       console.error('Error getting storage:', error);
@@ -46,31 +90,31 @@ class StorageManager {
   }
 
   async getSnippets(): Promise<Snippet[]> {
+    const data = await this.getAll();
     const local = await chrome.storage.local.get('snippets');
     const localSnippets = this.sanitizeSnippets(local.snippets);
+    const encryptedSnippets = this.sanitizeSnippets(data.snippets);
+    const mergedSnippets = this.mergeSnippets(localSnippets, encryptedSnippets);
 
-    if (localSnippets.length > 0) {
-      // Keep plaintext snippet store normalized.
-      if (!Array.isArray(local.snippets) || localSnippets.length !== local.snippets.length) {
-        await chrome.storage.local.set({ snippets: localSnippets });
+    if (mergedSnippets.length > 0) {
+      if (this.haveSnippetDifferences(localSnippets, mergedSnippets)) {
+        await chrome.storage.local.set({ snippets: mergedSnippets });
       }
-      return localSnippets;
+
+      if (this.haveSnippetDifferences(encryptedSnippets, mergedSnippets)) {
+        await this.saveAll({ ...data, snippets: mergedSnippets });
+      }
+
+      return mergedSnippets;
     }
 
-    const data = await this.getAll();
-    const snippets = this.sanitizeSnippets(data.snippets);
-
-    if (snippets.length === 0) {
+    if (encryptedSnippets.length === 0 && localSnippets.length === 0) {
       const defaults = this.getDefaultSnippets();
       await this.saveAll({ ...data, snippets: defaults });
       return defaults;
     }
 
-    if (!Array.isArray(data.snippets) || snippets.length !== data.snippets.length) {
-      await this.saveAll({ ...data, snippets });
-    }
-
-    return snippets;
+    return mergedSnippets;
   }
 
   async saveSnippet(snippet: Snippet): Promise<void> {
@@ -127,14 +171,25 @@ class StorageManager {
     return CryptoJS.AES.encrypt(JSON.stringify(data), this.getEncryptionKey()).toString();
   }
 
-  private decrypt(encryptedData: string): StorageData {
-    try {
-      const decrypted = CryptoJS.AES.decrypt(encryptedData, this.getEncryptionKey());
-      return JSON.parse(decrypted.toString(CryptoJS.enc.Utf8));
-    } catch (error) {
-      console.error('Decryption error:', error);
-      return this.getDefaultData();
+  private decrypt(encryptedData: string): StorageData | null {
+    for (const key of this.getDecryptionKeys()) {
+      try {
+        const decrypted = CryptoJS.AES.decrypt(encryptedData, key).toString(CryptoJS.enc.Utf8);
+        if (!decrypted) {
+          continue;
+        }
+
+        const parsed = JSON.parse(decrypted) as Partial<StorageData>;
+        if (parsed && typeof parsed === 'object') {
+          return this.normalizeStorageData(parsed);
+        }
+      } catch {
+        // Try next key.
+      }
     }
+
+    console.warn('Unable to decrypt storage payload with known keys.');
+    return null;
   }
 
   private getDefaultData(): StorageData {
@@ -142,7 +197,7 @@ class StorageManager {
       snippets: this.getDefaultSnippets(),
       user: {
         settings: {
-          theme: 'system',
+          theme: 'dark',
           triggerKey: '/',
           caseSensitive: false,
           showNotifications: true,
@@ -302,6 +357,45 @@ class StorageManager {
       },
       encryptionEnabled: typeof value?.encryptionEnabled === 'boolean' ? value.encryptionEnabled : true,
     };
+  }
+
+  private mergeSnippets(localSnippets: Snippet[], encryptedSnippets: Snippet[]): Snippet[] {
+    const merged = new Map<string, Snippet>();
+
+    const upsertSnippet = (snippet: Snippet) => {
+      const existing = merged.get(snippet.id);
+      if (!existing) {
+        merged.set(snippet.id, snippet);
+        return;
+      }
+
+      const existingTime = Date.parse(existing.updatedAt || existing.createdAt || '') || 0;
+      const incomingTime = Date.parse(snippet.updatedAt || snippet.createdAt || '') || 0;
+      if (incomingTime >= existingTime) {
+        merged.set(snippet.id, snippet);
+      }
+    };
+
+    encryptedSnippets.forEach(upsertSnippet);
+    localSnippets.forEach(upsertSnippet);
+
+    return Array.from(merged.values()).sort((a, b) => {
+      const aTime = Date.parse(a.updatedAt || a.createdAt || '') || 0;
+      const bTime = Date.parse(b.updatedAt || b.createdAt || '') || 0;
+      return bTime - aTime;
+    });
+  }
+
+  private haveSnippetDifferences(a: Snippet[], b: Snippet[]): boolean {
+    if (a.length !== b.length) return true;
+
+    const sortById = (items: Snippet[]) =>
+      [...items].sort((x, y) => x.id.localeCompare(y.id)).map((item) => JSON.stringify(item));
+
+    const left = sortById(a);
+    const right = sortById(b);
+
+    return left.some((value, index) => value !== right[index]);
   }
 }
 

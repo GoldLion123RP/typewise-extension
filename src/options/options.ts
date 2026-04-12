@@ -6,12 +6,14 @@ import { gistManager } from '../api/gistManager';
 class OptionsManager {
   private currentTab = 'general';
   private snippets: Snippet[] = [];
+  private settingsSaveTimer: number | null = null;
 
   constructor() {
     void this.init();
   }
 
   async init() {
+    document.body.classList.add('dark');
     this.attachEventListeners();
 
     try {
@@ -30,8 +32,6 @@ class OptionsManager {
     const user = await storage.getUser();
     const settings = user.settings;
 
-    (document.getElementById('theme') as HTMLSelectElement | null)?.setAttribute('value', settings.theme);
-    const themeEl = document.getElementById('theme') as HTMLSelectElement | null;
     const triggerKeyEl = document.getElementById('triggerKey') as HTMLInputElement | null;
     const expandDelayEl = document.getElementById('expandDelay') as HTMLInputElement | null;
     const caseSensitiveEl = document.getElementById('caseSensitive') as HTMLInputElement | null;
@@ -39,15 +39,12 @@ class OptionsManager {
     const syncEnabledEl = document.getElementById('syncEnabled') as HTMLInputElement | null;
     const autoBackupEl = document.getElementById('autoBackup') as HTMLInputElement | null;
 
-    if (themeEl) themeEl.value = settings.theme;
     if (triggerKeyEl) triggerKeyEl.value = settings.triggerKey;
     if (expandDelayEl) expandDelayEl.value = settings.expandDelay.toString();
     if (caseSensitiveEl) caseSensitiveEl.checked = settings.caseSensitive;
     if (showNotificationsEl) showNotificationsEl.checked = settings.showNotifications;
     if (syncEnabledEl) syncEnabledEl.checked = settings.syncEnabled;
     if (autoBackupEl) autoBackupEl.checked = settings.autoBackup;
-
-    this.applyTheme(settings.theme);
   }
 
   async loadSnippets() {
@@ -64,17 +61,32 @@ class OptionsManager {
       });
     });
 
-    document.getElementById('saveBtn')?.addEventListener('click', () => {
+    document.getElementById('triggerKey')?.addEventListener('input', (e) => {
+      const input = e.target as HTMLInputElement;
+      if (input.value.length > 1) {
+        input.value = input.value.slice(0, 1);
+      }
+      this.scheduleSettingsSave();
+    });
+
+    document.getElementById('expandDelay')?.addEventListener('input', () => {
+      this.scheduleSettingsSave();
+    });
+
+    document.getElementById('caseSensitive')?.addEventListener('change', () => {
       void this.saveSettings();
     });
 
-    document.getElementById('themeToggle')?.addEventListener('click', () => {
-      void this.toggleTheme();
+    document.getElementById('showNotifications')?.addEventListener('change', () => {
+      void this.saveSettings();
     });
 
-    document.getElementById('theme')?.addEventListener('change', (e) => {
-      const theme = (e.target as HTMLSelectElement).value as 'light' | 'dark' | 'system';
-      this.applyTheme(theme);
+    document.getElementById('syncEnabled')?.addEventListener('change', () => {
+      void this.saveSettings();
+    });
+
+    document.getElementById('autoBackup')?.addEventListener('change', () => {
+      void this.saveSettings();
     });
 
     document.getElementById('addSnippetBtn')?.addEventListener('click', () => this.openSnippetModal());
@@ -161,13 +173,18 @@ class OptionsManager {
     this.currentTab = tabName;
   }
 
-  async saveSettings() {
+  async saveSettings(showToast = false) {
+    if (this.settingsSaveTimer !== null) {
+      window.clearTimeout(this.settingsSaveTimer);
+      this.settingsSaveTimer = null;
+    }
+
+    const triggerKeyRaw = (document.getElementById('triggerKey') as HTMLInputElement | null)?.value.trim() || '/';
+    const triggerKey = triggerKeyRaw[0] || '/';
+
     const settings: UserSettings = {
-      theme: ((document.getElementById('theme') as HTMLSelectElement | null)?.value || 'system') as
-        | 'light'
-        | 'dark'
-        | 'system',
-      triggerKey: (document.getElementById('triggerKey') as HTMLInputElement | null)?.value || '/',
+      theme: 'dark',
+      triggerKey,
       expandDelay: parseInt((document.getElementById('expandDelay') as HTMLInputElement | null)?.value || '0', 10) || 0,
       caseSensitive: (document.getElementById('caseSensitive') as HTMLInputElement | null)?.checked || false,
       showNotifications:
@@ -178,7 +195,19 @@ class OptionsManager {
 
     await storage.updateSettings(settings);
     chrome.runtime.sendMessage({ type: 'UPDATE_SETTINGS', settings }).catch(() => undefined);
-    this.showToast('Settings saved successfully', 'success');
+    if (showToast) {
+      this.showToast('Settings saved successfully', 'success');
+    }
+  }
+
+  scheduleSettingsSave() {
+    if (this.settingsSaveTimer !== null) {
+      window.clearTimeout(this.settingsSaveTimer);
+    }
+
+    this.settingsSaveTimer = window.setTimeout(() => {
+      void this.saveSettings();
+    }, 180);
   }
 
   renderSnippets(searchTerm = '') {
@@ -480,34 +509,6 @@ class OptionsManager {
         if (contentInput) contentInput.value = content;
       }
     }
-  }
-
-  applyTheme(theme: 'light' | 'dark' | 'system') {
-    const isDark =
-      theme === 'dark' ||
-      (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
-    document.body.classList.toggle('dark', isDark);
-
-    const themeBtn = document.getElementById('themeToggle');
-    if (themeBtn) {
-      themeBtn.textContent = isDark ? '☀' : '🌙';
-      themeBtn.setAttribute('aria-label', isDark ? 'Switch to light theme' : 'Switch to dark theme');
-      themeBtn.setAttribute('title', isDark ? 'Switch to light theme' : 'Switch to dark theme');
-    }
-  }
-
-  async toggleTheme() {
-    const themeSelect = document.getElementById('theme') as HTMLSelectElement | null;
-    const currentIsDark = document.body.classList.contains('dark');
-    const nextTheme: 'light' | 'dark' = currentIsDark ? 'light' : 'dark';
-
-    if (themeSelect) {
-      themeSelect.value = nextTheme;
-    }
-
-    this.applyTheme(nextTheme);
-    await this.saveSettings();
   }
 
   showToast(message: string, type: 'success' | 'error' | 'warning' = 'success') {

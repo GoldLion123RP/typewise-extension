@@ -12,7 +12,6 @@ class PopupManager {
   
   async init() {
     this.attachEventListeners();
-    this.applyTheme();
 
     try {
       await this.loadSnippets();
@@ -139,11 +138,6 @@ class PopupManager {
       if ((e.target as HTMLElement).id === 'snippetModal') {
         this.hideModal();
       }
-    });
-    
-    // Theme toggle
-    document.getElementById('themeToggle')?.addEventListener('click', () => {
-      this.toggleTheme();
     });
     
     // Settings
@@ -370,31 +364,6 @@ class PopupManager {
       a.click();
       URL.revokeObjectURL(url);
       this.showToast('Snippets exported', 'success');
-    }
-  }
-  
-  applyTheme() {
-    const user = localStorage.getItem('theme') || 'light';
-    if (user === 'dark') {
-      document.body.classList.add('dark');
-    } else {
-      document.body.classList.remove('dark');
-    }
-
-    const themeBtn = document.getElementById('themeToggle');
-    if (themeBtn) {
-      themeBtn.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
-    }
-  }
-  
-  toggleTheme() {
-    document.body.classList.toggle('dark');
-    const isDark = document.body.classList.contains('dark');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    
-    const themeBtn = document.getElementById('themeToggle');
-    if (themeBtn) {
-      themeBtn.textContent = isDark ? '☀️' : '🌙';
     }
   }
   
