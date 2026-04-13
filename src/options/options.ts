@@ -232,28 +232,57 @@ class OptionsManager {
         (snippet.content || '').toLowerCase().includes(term),
     );
 
+    // Clear existing content
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
+    }
+
     if (filtered.length === 0) {
-      container.innerHTML = '<div class="empty-state">No snippets found</div>';
+      const emptyState = document.createElement('div');
+      emptyState.className = 'empty-state';
+      emptyState.textContent = 'No snippets found';
+      container.appendChild(emptyState);
       return;
     }
 
-    container.innerHTML = filtered
-      .map(
-        (snippet) => `
-        <div class="snippet-card">
-          <h4>
-            ${this.escapeHtml(snippet.title || 'Untitled')}
-            <span class="snippet-shortcut">${this.escapeHtml(snippet.shortcut || '')}</span>
-          </h4>
-          <div class="snippet-content-preview">${this.escapeHtml(snippet.content || '')}</div>
-          <div class="snippet-actions">
-            <button class="snippet-action-btn edit-btn" data-id="${snippet.id}">Edit</button>
-            <button class="snippet-action-btn delete-btn delete" data-id="${snippet.id}">Delete</button>
-          </div>
-        </div>
-      `,
-      )
-      .join('');
+    filtered.forEach((snippet) => {
+      const card = document.createElement('div');
+      card.className = 'snippet-card';
+
+      const titleContainer = document.createElement('h4');
+      const titleText = document.createTextNode(this.escapeHtml(snippet.title || 'Untitled'));
+      const shortcutSpan = document.createElement('span');
+      shortcutSpan.className = 'snippet-shortcut';
+      shortcutSpan.textContent = this.escapeHtml(snippet.shortcut || '');
+      titleContainer.appendChild(titleText);
+      titleContainer.appendChild(shortcutSpan);
+
+      const contentPreview = document.createElement('div');
+      contentPreview.className = 'snippet-content-preview';
+      contentPreview.textContent = this.escapeHtml(snippet.content || '');
+
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'snippet-actions';
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'snippet-action-btn edit-btn';
+      editBtn.setAttribute('data-id', snippet.id);
+      editBtn.textContent = 'Edit';
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'snippet-action-btn delete-btn delete';
+      deleteBtn.setAttribute('data-id', snippet.id);
+      deleteBtn.textContent = 'Delete';
+
+      actionsDiv.appendChild(editBtn);
+      actionsDiv.appendChild(deleteBtn);
+
+      card.appendChild(titleContainer);
+      card.appendChild(contentPreview);
+      card.appendChild(actionsDiv);
+
+      container.appendChild(card);
+    });
   }
 
   openSnippetModal(snippetId?: string) {

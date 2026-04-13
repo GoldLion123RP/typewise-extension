@@ -1,5 +1,4 @@
 // src/utils/storage.ts
-import CryptoJS from 'crypto-js';
 import { StorageData, Snippet, User, UserSettings } from '../types';
 
 const STORAGE_KEY = 'typewise_data';
@@ -412,26 +411,71 @@ class StorageManager {
 
   private async encrypt(data: StorageData): Promise<string> {
     const encryptionKey = await this.getOrCreateEncryptionKey();
-    return CryptoJS.AES.encrypt(JSON.stringify(data), encryptionKey).toString();
+    const keyBuffer = this.hexToBuffer(encryptionKey);
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyBuffer,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt']
+    );
+
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encodedData = new TextEncoder().encode(JSON.stringify(data));
+    const ciphertext = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      cryptoKey,
+      encodedData
+    );
+
+    // Combine IV and ciphertext
+    const combined = new Uint8Array(iv.length + ciphertext.byteLength);
+    combined.set(iv);
+    combined.set(new Uint8Array(ciphertext), iv.length);
+
+    return btoa(String.fromCharCode(...combined));
   }
 
   private async decrypt(encryptedData: string): Promise<StorageData | null> {
-    for (const key of await this.getDecryptionKeys()) {
-      try {
-        const decrypted = CryptoJS.AES.decrypt(encryptedData, key).toString(CryptoJS.enc.Utf8);
-        if (!decrypted) {
-          continue;
-        }
+    try {
+      const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
+      const iv = combined.slice(0, 12);
+      const ciphertext = combined.slice(12);
 
-        const parsed = JSON.parse(decrypted) as Partial<StorageData>;
-        if (parsed && typeof parsed === 'object') {
-          return this.normalizeStorageData(parsed);
+      for (const key of await this.getDecryptionKeys()) {
+        try {
+          const keyBuffer = this.hexToBuffer(key);
+          const cryptoKey = await crypto.subtle.importKey(
+            'raw',
+            keyBuffer,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['decrypt']
+          );
+
+          const decrypted = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv },
+            cryptoKey,
+            ciphertext
+          );
+          const decoded = new TextDecoder().decode(decrypted);
+          if (!decoded) {
+            continue;
+          }
+
+          const parsed = JSON.parse(decoded) as Partial<StorageData>;
+          if (parsed && typeof parsed === 'object') {
+            return this.normalizeStorageData(parsed);
+          }
+        } catch {
+          // Try next key.
         }
-      } catch {
-        // Try next key.
       }
+    } catch (error) {
+      console.warn('Error during decryption:', error);
     }
 
+    // Try legacy format (plaintext JSON)
     try {
       const parsed = JSON.parse(encryptedData) as Partial<StorageData>;
       if (parsed && typeof parsed === 'object') {
@@ -443,6 +487,17 @@ class StorageManager {
 
     console.warn('Unable to decrypt storage payload with known keys.');
     return null;
+  }
+
+  private hexToBuffer(hex: string): ArrayBuffer {
+    if (hex.length % 2 !== 0) {
+      throw new Error('Invalid hex string');
+    }
+    const buffer = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) {
+      buffer[i / 2] = parseInt(hex.substr(i, 2), 16);
+    }
+    return buffer.buffer;
   }
 
   private getDefaultData(): StorageData {

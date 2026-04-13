@@ -3,7 +3,7 @@ const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
 const HtmlPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const Plugin = require('lodash-webpack-plugin');
+const LodashPlugin = require('lodash-webpack-plugin');
 
 const target = process.env.TARGET || 'chrome';
 const manifestSource = target === 'firefox' ? 'manifest.firefox.json' : 'manifest.json';
@@ -96,13 +96,9 @@ module.exports = {
       chunks: ['options'],
       inject: 'body'
     }),
-new Plugin({
-  // Disable the template function which uses the Function constructor
-  path: 'lodash-template',
-  chain: (chain) => {
-    chain.get('template').value(null);
-  }
-})
+new LodashPlugin({
+      lodashTemplate: false
+    })
   ],
   
   // Disable performance warnings for browser extensions
