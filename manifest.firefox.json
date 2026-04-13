@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "name": "TypeWise - Smart Text Expansion (Firefox)",
+  "name": "TypeWise - Smart Text Expansion",
   "short_name": "TypeWise FF",
   "version": "0.0.1",
   "description": "Boost productivity with smart text expansion, snippets, and templates. Syncs with GitHub Gists.",
