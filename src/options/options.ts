@@ -458,13 +458,26 @@ class OptionsManager {
 
     if (!statusDiv) return;
 
+    // Clear existing content
+    statusDiv.textContent = '';
+
     if (user.githubToken) {
       statusDiv.className = 'github-status connected';
-      statusDiv.innerHTML = `
-        <strong>Connected to GitHub</strong>
-        <p>Username: ${this.escapeHtml(user.githubUsername || 'Unknown')}</p>
-        ${user.gistId ? `<p>Gist ID: ${this.escapeHtml(user.gistId)}</p>` : ''}
-      `;
+
+      // Create and append elements
+      const strong = document.createElement('strong');
+      strong.textContent = 'Connected to GitHub';
+      statusDiv.appendChild(strong);
+
+      const usernameP = document.createElement('p');
+      usernameP.textContent = `Username: ${this.escapeHtml(user.githubUsername || 'Unknown')}`;
+      statusDiv.appendChild(usernameP);
+
+      if (user.gistId) {
+        const gistP = document.createElement('p');
+        gistP.textContent = `Gist ID: ${this.escapeHtml(user.gistId)}`;
+        statusDiv.appendChild(gistP);
+      }
 
       if (connectBtn) {
         connectBtn.textContent = 'Disconnect GitHub';
@@ -473,10 +486,15 @@ class OptionsManager {
       }
     } else {
       statusDiv.className = 'github-status';
-      statusDiv.innerHTML = `
-        <strong>Not connected to GitHub</strong>
-        <p>Connect to sync your snippets across devices.</p>
-      `;
+
+      // Create and append elements
+      const strong = document.createElement('strong');
+      strong.textContent = 'Not connected to GitHub';
+      statusDiv.appendChild(strong);
+
+      const p = document.createElement('p');
+      p.textContent = 'Connect to sync your snippets across devices.';
+      statusDiv.appendChild(p);
 
       if (connectBtn) {
         connectBtn.textContent = 'Connect GitHub Account';

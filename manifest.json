@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TypeWise - Smart Text Expansion",
   "short_name": "TypeWise",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Boost productivity with smart text expansion, snippets, and templates. Syncs with GitHub Gists.",
   "author": "Rahul Pal",
   "homepage_url": "https://github.com/GoldLion123RP/typewise-extension",

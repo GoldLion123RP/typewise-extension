@@ -1,6 +1,6 @@
 {
   "name": "typewise-extension",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Smart text expansion extension with GitHub Gist sync",
   "main": "src/background/background.ts",
   "scripts": {
@@ -14,8 +14,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
     "test": "jest",
     "test:watch": "jest --watch",
-    "package:chrome": "npm run build:chrome && cd dist/chrome && zip -r ../../typewise-chrome.zip .",
-    "package:firefox": "npm run build:firefox && cd dist/firefox && zip -r ../../typewise-firefox.zip ."
+    "package:chrome": "npm run build:chrome && cd dist/chrome && bestzip ../../typewise-chrome.zip *",
+    "package:firefox": "npm run build:firefox && cd dist/firefox && bestzip ../../typewise-firefox.zip *"
   },
   "keywords": [
     "browser-extension",
@@ -33,6 +33,7 @@
     "@types/node": "^20.9.0",
     "@typescript-eslint/eslint-plugin": "^8.58.1",
     "@typescript-eslint/parser": "^8.58.1",
+    "bestzip": "^2.2.1",
     "copy-webpack-plugin": "^14.0.0",
     "cross-env": "^7.0.3",
     "css-loader": "^6.8.1",
@@ -40,6 +41,7 @@
     "eslint-config-prettier": "^9.0.0",
     "html-webpack-plugin": "^5.5.3",
     "jest": "^29.7.0",
+    "lodash-webpack-plugin": "^0.11.6",
     "mini-css-extract-plugin": "^2.7.6",
     "prettier": "^3.1.0",
     "rimraf": "^5.0.5",
