@@ -26,13 +26,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Prepare site
+        run: |
+          rm -rf site
+          mkdir -p site/assets/icons
+          cp -R homepage/. site/
+          cp assets/icons/icon-128.png site/assets/icons/icon-128.png
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./homepage
+          path: ./site
 
       - name: Deploy to GitHub Pages
         id: deployment
