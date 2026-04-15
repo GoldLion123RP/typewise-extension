@@ -42,7 +42,7 @@ class BackgroundService {
       contexts: ['selection']
     });
 
-    chrome.contextMenus.onClicked.addListener((info, tab) => {
+    chrome.contextMenus.onClicked.addListener((info: any, tab: chrome.tabs.Tab | undefined) => {
       if (info.menuItemId === 'typewise-insert' && tab?.id) {
         this.showQuickSearch(tab.id);
       } else if (info.menuItemId === 'typewise-create' && info.selectionText) {
@@ -122,7 +122,7 @@ class BackgroundService {
 
   handleCommand(command: string) {
     if (command === 'quick-search') {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs: chrome.tabs.Tab[]) => {
         if (tabs[0]?.id) {
           this.showQuickSearch(tabs[0].id);
         }
@@ -182,8 +182,8 @@ class BackgroundService {
   }
 
   notifyContentScripts(type: string, data?: any) {
-    chrome.tabs.query({}, (tabs) => {
-      tabs.forEach(tab => {
+    chrome.tabs.query({}, (tabs: chrome.tabs.Tab[]) => {
+      tabs.forEach((tab: chrome.tabs.Tab) => {
         if (tab.id) {
           chrome.tabs.sendMessage(tab.id, { type, ...data }).catch(() => {
             // Ignore errors for tabs without content script

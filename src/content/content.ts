@@ -69,7 +69,7 @@ class ContentScriptManager {
     this.attachListeners();
 
     // Listen for updates from background
-    chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+    chrome.runtime.onMessage.addListener((request: { type?: string; [key: string]: unknown }, _sender: chrome.runtime.MessageSender, sendResponse: (response?: { success: boolean; [key: string]: unknown }) => void) => {
       console.log('TypeWise: Received message', request.type);
       if (request.type === 'UPDATE_SNIPPETS') {
         void this.loadSnippets();

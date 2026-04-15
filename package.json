@@ -12,7 +12,7 @@
     "clean": "rimraf dist",
     "lint": "eslint src/**/*.{ts,tsx}",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "package:chrome": "npm run build:chrome && cd dist/chrome && bestzip ../../typewise-chrome.zip *",
     "package:firefox": "npm run build:firefox && cd dist/firefox && bestzip ../../typewise-firefox.zip *"

@@ -335,7 +335,7 @@ class PopupManager {
     const snippet = this.snippets.find(s => s.id === id);
     if (snippet) {
       // Send to active tab
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs: chrome.tabs.Tab[]) => {
         if (tabs[0]?.id) {
           chrome.tabs.sendMessage(tabs[0].id, {
             type: 'INSERT_SNIPPET',
