@@ -1,13 +1,14 @@
+---
 name: Deploy Homepage
 
-on:
+"on":
   push:
     branches:
       - main
     paths:
-      - 'homepage/**'
-      - '.github/workflows/pages.yml'
-  workflow_dispatch:
+      - homepage/**
+      - .github/workflows/pages.yml
+  workflow_dispatch: {}
 
 permissions:
   contents: read
