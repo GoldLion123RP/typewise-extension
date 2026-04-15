@@ -367,16 +367,16 @@ class OptionsManager {
       await this.loadSnippets();
       this.closeSnippetModal();
       this.showToast('Snippet saved successfully', 'success');
-    } catch (error) {
+    } catch (_error) {
       // Fallback to local write if background message is temporarily unavailable.
       try {
         await storage.saveSnippet(snippet);
         await this.loadSnippets();
         this.closeSnippetModal();
         this.showToast('Snippet saved successfully', 'success');
-      } catch (fallbackError) {
-        console.error('Options save snippet error:', fallbackError);
-        const message = fallbackError instanceof Error ? fallbackError.message : 'Failed to save snippet. Please try again.';
+      } catch (_fallbackError) {
+        console.error('Options save snippet error:', _fallbackError);
+        const message = _fallbackError instanceof Error ? _fallbackError.message : 'Failed to save snippet. Please try again.';
         this.showToast(message, 'error');
       }
     }

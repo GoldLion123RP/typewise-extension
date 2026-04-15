@@ -294,7 +294,7 @@ class PopupManager {
       await this.updateStats();
       this.hideModal();
       this.showToast('Snippet saved successfully', 'success');
-    } catch (error) {
+    } catch (_error) {
       // Fallback to direct storage in case background messaging fails.
       try {
         await storage.saveSnippet(snippet);
@@ -302,9 +302,9 @@ class PopupManager {
         await this.updateStats();
         this.hideModal();
         this.showToast('Snippet saved successfully', 'success');
-      } catch (fallbackError) {
-        console.error('Popup save snippet error:', fallbackError);
-        const message = fallbackError instanceof Error ? fallbackError.message : 'Failed to save snippet. Please try again.';
+      } catch (_fallbackError) {
+        console.error('Popup save snippet error:', _fallbackError);
+        const message = _fallbackError instanceof Error ? _fallbackError.message : 'Failed to save snippet. Please try again.';
         this.showToast(message, 'error');
       }
     }
@@ -374,8 +374,8 @@ class PopupManager {
       } else {
         throw new Error(result.error);
       }
-    } catch (error: any) {
-      this.showToast(error.message || 'Sync failed', 'error');
+    } catch (_error: any) {
+      this.showToast(_error.message || 'Sync failed', 'error');
     }
   }
   
@@ -400,7 +400,7 @@ class PopupManager {
 
           await this.loadSnippets();
           this.showToast('Snippets imported successfully', 'success');
-        } catch (error) {
+        } catch (_error) {
           this.showToast('Invalid import file', 'error');
         }
       }

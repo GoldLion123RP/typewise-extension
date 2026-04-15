@@ -25,7 +25,7 @@ class BackgroundService {
     this.setupAutoSync();
   }
 
-  async handleInstalled(details: chrome.runtime.InstalledDetails) {
+  async handleInstalled(_details: chrome.runtime.InstalledDetails) {
     // Clear all context menus first
     await chrome.contextMenus.removeAll();
 
@@ -112,9 +112,9 @@ class BackgroundService {
         default:
           sendResponse({ success: false, error: 'Unknown message type' });
       }
-    } catch (error: any) {
-      console.error('Background message error:', error);
-      sendResponse({ success: false, error: error.message });
+    } catch (_error: any) {
+      console.error('Background message error:', _error);
+      sendResponse({ success: false, error: _error.message });
     }
 
     return true;

@@ -9,38 +9,91 @@ export class GistManager {
   private readonly CLIENT_ID = GITHUB_CONFIG.CLIENT_ID;
 
   async authenticate(): Promise<string> {
-    return new Promise((resolve, reject) => {
-      if (!this.CLIENT_ID || this.CLIENT_ID === 'your_client_id_here') {
-        reject(new Error('GitHub client ID is not configured. Update GITHUB_CLIENT_ID in your environment.'));
-        return;
+    if (!this.CLIENT_ID || this.CLIENT_ID === 'your_client_id_here') {
+      throw new Error('GitHub client ID is not configured. Update GITHUB_CLIENT_ID in your environment.');
+    }
+
+    const deviceCodeResponse = await fetch('https://github.com/login/device/code', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: this.CLIENT_ID,
+        scope: 'gist',
+      }).toString(),
+    });
+
+    if (!deviceCodeResponse.ok) {
+      throw new Error(`GitHub device flow error: ${deviceCodeResponse.statusText}`);
+    }
+
+    const deviceCodeData = await deviceCodeResponse.json() as {
+      device_code: string;
+      user_code: string;
+      verification_uri: string;
+      verification_uri_complete?: string;
+      expires_in: number;
+      interval?: number;
+    };
+
+    if (!deviceCodeData.device_code || !deviceCodeData.verification_uri) {
+      throw new Error('GitHub device authorization did not return a valid verification URL.');
+    }
+
+    const authWindowUrl = deviceCodeData.verification_uri_complete || deviceCodeData.verification_uri;
+    window.open(authWindowUrl, '_blank', 'noopener,noreferrer');
+
+    const pollInterval = Math.max(deviceCodeData.interval || 5, 5) * 1000;
+    const expirationAt = Date.now() + deviceCodeData.expires_in * 1000;
+
+    while (Date.now() < expirationAt) {
+      const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: this.CLIENT_ID,
+          device_code: deviceCodeData.device_code,
+          grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+        }).toString(),
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error(`GitHub token polling error: ${tokenResponse.statusText}`);
       }
 
-      const authUrl = `https://github.com/login/oauth/authorize?client_id=${this.CLIENT_ID}&scope=gist`;
-      
-      chrome.identity.launchWebAuthFlow(
-        {
-          url: authUrl,
-          interactive: true
-        },
-        (redirectUrl) => {
-          if (chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError);
-            return;
-          }
-          
-          // Extract token from redirect URL
-          const url = new URL(redirectUrl || '');
-          const code = url.searchParams.get('code');
-          
-          if (code) {
-            // In a real implementation, exchange code for token via your backend
-            resolve(code);
-          } else {
-            reject(new Error('Authentication failed'));
-          }
-        }
-      );
-    });
+      const tokenData = await tokenResponse.json() as {
+        access_token?: string;
+        error?: string;
+        error_description?: string;
+      };
+
+      if (tokenData.access_token) {
+        return tokenData.access_token;
+      }
+
+      if (tokenData.error === 'authorization_pending') {
+        await new Promise((resolve) => window.setTimeout(resolve, pollInterval));
+        continue;
+      }
+
+      if (tokenData.error === 'slow_down') {
+        await new Promise((resolve) => window.setTimeout(resolve, pollInterval + 5000));
+        continue;
+      }
+
+      if (tokenData.error) {
+        throw new Error(tokenData.error_description || `GitHub authentication failed: ${tokenData.error}`);
+      }
+
+      await new Promise((resolve) => window.setTimeout(resolve, pollInterval));
+    }
+
+    throw new Error('GitHub device authorization expired before it was approved.');
   }
 
   async createOrUpdateGist(token: string, snippets: Snippet[]): Promise<string> {

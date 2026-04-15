@@ -602,7 +602,7 @@ class StorageManager {
       }
 
       throw new Error('Unsupported import format');
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Invalid import data format');
     }
   }
