@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="TypeWise is a smart text expansion extension with snippets, templates, and optional GitHub Gist sync."
+    />
+    <meta name="theme-color" content="#0b1020" />
+    <title>TypeWise - Smart Text Expansion</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="homepage.css" />
+    <script defer src="homepage.js"></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="#home" aria-label="TypeWise home">
+          <span class="brand__text">
+            <strong>TypeWise</strong>
+            <small>Smart text expansion</small>
+          </span>
+        </a>
+
+        <nav class="topnav" aria-label="Primary">
+          <a href="#features">Features</a>
+          <a href="#workflow">Workflow</a>
+          <a href="#sync">Privacy</a>
+          <a href="#start">Get started</a>
+        </nav>
+
+        <div class="topbar__actions">
+          <a class="button button--ghost" href="https://github.com/GoldLion123RP/typewise-extension" target="_blank" rel="noreferrer">GitHub</a>
+          <a class="button button--solid" href="#start">Explore</a>
+        </div>
+      </header>
+
+      <main id="home">
+        <section class="hero section" data-reveal>
+          <div class="hero__copy">
+            <div class="eyebrow">
+              <span class="eyebrow__dot"></span>
+              Chrome and Firefox extension
+            </div>
+            <h1>Text expansion that stays out of the way and moves you faster.</h1>
+            <p class="hero__lede">
+              TypeWise turns short triggers into polished snippets, dynamic templates, and reusable replies.
+              It is local-first by default, with optional GitHub Gist sync for cloud backup and cross-device workflows.
+            </p>
+
+            <div class="hero__actions">
+              <a class="button button--solid" href="#features">See features</a>
+              <button class="button button--ghost" type="button" data-copy="npm install && npm run build:chrome">Copy quick start</button>
+            </div>
+
+            <dl class="metrics" aria-label="Product highlights">
+              <div>
+                <dt>Instant</dt>
+                <dd>Trigger-based expansion in any input field.</dd>
+              </div>
+              <div>
+                <dt>Private</dt>
+                <dd>Encrypted local storage with optional Gist sync.</dd>
+              </div>
+              <div>
+                <dt>Keyboard-first</dt>
+                <dd>Popup, search, and quick access from shortcuts.</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div class="hero__panel" aria-label="TypeWise showcase">
+            <div class="demo-card demo-card--window">
+              <div class="window-dots" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <div class="demo-card__label">Live snippet preview</div>
+              <div class="demo-output">
+                <span class="demo-output__prompt">/hello</span>
+                <span class="demo-output__arrow">→</span>
+                <div class="demo-output__value" data-demo-value>Hello! How can I help you today?</div>
+              </div>
+              <p class="demo-card__note" data-demo-note>Type a trigger once and let TypeWise expand it everywhere you write.</p>
+            </div>
+
+            <div class="demo-grid">
+              <article class="mini-card">
+                <span class="mini-card__label">Dynamic variables</span>
+                <strong>{{date}} · {{time}} · {{year}}</strong>
+              </article>
+              <article class="mini-card mini-card--accent">
+                <span class="mini-card__label">Sync</span>
+                <strong>Private GitHub Gist backup</strong>
+              </article>
+            </div>
+
+            <div class="snippet-card">
+              <div class="snippet-card__header">
+                <span>Snippet example</span>
+                <span>Shortcut: /sig</span>
+              </div>
+              <pre><code>Rahul Pal
+Productivity, made simple.
+Hello, how can I help?</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <section class="marquee section" aria-label="Key capabilities" data-reveal>
+          <div class="marquee__track">
+            <span>Local-first storage</span>
+            <span>Optional Gist sync</span>
+            <span>Chrome and Firefox</span>
+            <span>Import and export</span>
+            <span>Quick popup access</span>
+            <span>Context menus</span>
+          </div>
+        </section>
+
+        <section id="features" class="section section--stacked" data-reveal>
+          <div class="section-heading">
+            <p class="section-heading__eyebrow">Why TypeWise</p>
+            <h2>Designed for people who write the same things again and again.</h2>
+            <p>
+              The extension blends speed, clarity, and control so you can manage snippets without turning your browser into another app to babysit.
+            </p>
+          </div>
+
+          <div class="feature-grid">
+            <article class="feature-card">
+              <span class="feature-card__icon">01</span>
+              <h3>Trigger-based expansion</h3>
+              <p>Type a shortcut prefix and expand instantly in text fields, forms, and editors.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-card__icon">02</span>
+              <h3>Dynamic snippets</h3>
+              <p>Use placeholders like date, time, year, and timestamp to keep snippets current.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-card__icon">03</span>
+              <h3>Fast snippet management</h3>
+              <p>Search, filter, and organize content from the popup and options page.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-card__icon">04</span>
+              <h3>Import and export</h3>
+              <p>Move snippets around with JSON backup and restore when you need portability.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-card__icon">05</span>
+              <h3>Optional cloud sync</h3>
+              <p>Back up snippets to a private GitHub Gist and keep them synced across devices.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-card__icon">06</span>
+              <h3>Privacy-conscious by default</h3>
+              <p>Works fully offline until you explicitly connect your GitHub account for sync.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="workflow" class="section split" data-reveal>
+          <div class="section-heading section-heading--left">
+            <p class="section-heading__eyebrow">Workflow</p>
+            <h2>Built around the shortest path from idea to expansion.</h2>
+            <p>
+              From a quick trigger in a comment box to a full snippet library in the options page, every step stays lightweight and predictable.
+            </p>
+          </div>
+
+          <div class="workflow">
+            <article class="workflow-step">
+              <span>1</span>
+              <div>
+                <h3>Capture</h3>
+                <p>Create a snippet in the popup or options page with a trigger and content.</p>
+              </div>
+            </article>
+            <article class="workflow-step">
+              <span>2</span>
+              <div>
+                <h3>Trigger</h3>
+                <p>Type the shortcut prefix in any field and let TypeWise detect it in context.</p>
+              </div>
+            </article>
+            <article class="workflow-step">
+              <span>3</span>
+              <div>
+                <h3>Expand</h3>
+                <p>Replace the trigger with a polished, reusable response in one motion.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="sync" class="section privacy-callout" data-reveal>
+          <div>
+            <p class="section-heading__eyebrow">Sync and privacy</p>
+            <h2>Use it locally, or connect GitHub Gist when you want a cloud backup.</h2>
+            <p>
+              The extension is designed to be useful without any external account. When you opt into sync, it uses GitHub's device flow and private Gists for a cleaner trust model.
+            </p>
+          </div>
+          <ul class="privacy-list">
+            <li>Encrypted local storage</li>
+            <li>No mandatory telemetry</li>
+            <li>Optional private Gist backup</li>
+            <li>Cross-device restore when enabled</li>
+          </ul>
+        </section>
+
+        <section id="start" class="section cta-card" data-reveal>
+          <div>
+            <p class="section-heading__eyebrow">Get started</p>
+            <h2>Deploy this page from the homepage folder on the main branch.</h2>
+            <p>
+              This homepage lives in a dedicated homepage folder so the repo root stays focused on the extension. Enable GitHub Pages through GitHub Actions and publish the homepage folder directly from main.
+            </p>
+          </div>
+          <div class="cta-card__actions">
+            <a class="button button--solid" href="https://github.com/GoldLion123RP/typewise-extension" target="_blank" rel="noreferrer">Open repository</a>
+            <a class="button button--ghost" href="#home">Back to top</a>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <p>
+          <span>TypeWise</span>
+          <span>Smart text expansion for people who live in text.</span>
+        </p>
+        <p>
+          <span>© <span data-year></span> Rahul Pal</span>
+          <span>Built for GitHub Pages from homepage/.</span>
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

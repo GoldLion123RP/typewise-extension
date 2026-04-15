@@ -15,6 +15,18 @@ A free, privacy-focused text expansion extension for Chrome and Firefox
 - **New Bug Report**: https://github.com/GoldLion123RP/typewise-extension/issues/new?labels=bug
 - **Feature Request**: https://github.com/GoldLion123RP/typewise-extension/issues/new?labels=enhancement
 
+## 🌐 Homepage
+
+This repository now includes a GitHub Pages-ready homepage in `homepage/`, which keeps the repo root focused on the extension files. To publish it from the `main` branch:
+
+1. Open the repository settings on GitHub.
+2. Go to **Pages**.
+3. Set **Build and deployment** to **GitHub Actions**.
+4. Push to `main` or run the `Deploy Homepage` workflow manually.
+5. GitHub Pages will publish the `homepage/` folder as the site root.
+
+The homepage is designed to showcase TypeWise as a polished product page while keeping the extension build untouched.
+
 ---
 
 ## ✨ Features
