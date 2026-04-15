@@ -29,13 +29,11 @@ secrets.json
 .vscode/
 .idea/
 .claude/
+.kilo/
 *.swp
 *.swo
 .DS_Store
 Thumbs.db
-
-# GitHub metadata
-.github/
 
 # Debug logs
 npm-debug.log*
@@ -47,6 +45,9 @@ debug.log
 # Test coverage
 coverage/
 .nyc_output/
+
+# TypeScript build info
+tsconfig.tsbuildinfo
 
 # Temporary files
 *.tmp
