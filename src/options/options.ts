@@ -162,12 +162,12 @@ class OptionsManager {
 
     document.getElementById('reportBugLink')?.addEventListener('click', (e) => {
       e.preventDefault();
-      window.open('https://github.com/GoldLion123RP/typewise-extension/issues/new?labels=bug', '_blank');
+      window.open('https://github.com/GoldLion123RP/typewise-extension/issues/new?labels=bug', '_blank', 'noopener,noreferrer');
     });
 
     document.getElementById('requestFeatureLink')?.addEventListener('click', (e) => {
       e.preventDefault();
-      window.open('https://github.com/GoldLion123RP/typewise-extension/issues/new?labels=enhancement', '_blank');
+      window.open('https://github.com/GoldLion123RP/typewise-extension/issues/new?labels=enhancement', '_blank', 'noopener,noreferrer');
     });
   }
 
