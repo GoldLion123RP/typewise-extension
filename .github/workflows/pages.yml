@@ -1,7 +1,6 @@
----
 name: Deploy Homepage
 
-"on":
+on:
   push:
     branches:
       - main
