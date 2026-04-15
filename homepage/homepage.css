@@ -105,8 +105,17 @@ img {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0;
+  gap: 10px;
   min-width: 0;
+}
+
+.brand__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(135deg, rgba(88, 215, 196, 0.2), rgba(255, 199, 111, 0.2));
+  box-shadow: 0 10px 26px rgba(88, 215, 196, 0.22);
 }
 
 .brand__text strong {
