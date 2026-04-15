@@ -45,10 +45,10 @@
         <span class="stat-value" id="todayUsage">0</span>
         <span class="stat-label">Used Today</span>
       </div>
-      <div class="stat">
+      <button id="syncBtn" class="stat stat-action" type="button" title="Sync with GitHub">
         <span class="stat-value" id="syncStatus">●</span>
         <span class="stat-label">Sync</span>
-      </div>
+      </button>
     </div>
 
     <!-- Snippets List -->
@@ -63,22 +63,6 @@
       <div id="snippetsList" class="snippets-list">
         <!-- Snippets will be loaded here -->
       </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-      <button id="syncBtn" class="action-btn" title="Sync with GitHub">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-        </svg>
-        Sync
-      </button>
-      <button id="importBtn" class="action-btn" title="Import snippets">
-        📥 Import
-      </button>
-      <button id="exportBtn" class="action-btn" title="Export snippets">
-        📤 Export
-      </button>
     </div>
 
     <!-- Add/Edit Modal -->

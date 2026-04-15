@@ -200,17 +200,8 @@ class PopupManager {
       this.openSettingsPage();
     });
     
-    // Quick actions
     document.getElementById('syncBtn')?.addEventListener('click', async () => {
       await this.syncWithGitHub();
-    });
-    
-    document.getElementById('importBtn')?.addEventListener('click', () => {
-      this.importSnippets();
-    });
-    
-    document.getElementById('exportBtn')?.addEventListener('click', async () => {
-      await this.exportSnippets();
     });
   }
   
@@ -353,6 +344,7 @@ class PopupManager {
     
     const totalEl = document.getElementById('totalSnippets');
     const usageEl = document.getElementById('todayUsage');
+    const syncButton = document.getElementById('syncBtn') as HTMLButtonElement | null;
     
     if (totalEl) totalEl.textContent = totalSnippets.toString();
     if (usageEl) usageEl.textContent = todayUsage.toString();
@@ -364,10 +356,22 @@ class PopupManager {
       syncEl.textContent = user.githubToken ? '●' : '○';
       syncEl.style.color = user.githubToken ? '#4caf50' : '#999';
     }
+
+    if (syncButton) {
+      syncButton.title = user.githubToken ? 'Sync with GitHub' : 'Connect GitHub in Settings to sync';
+      syncButton.setAttribute('aria-label', syncButton.title);
+    }
   }
   
   async syncWithGitHub() {
     try {
+      const user = await storage.getUser();
+      if (!user.githubToken) {
+        this.showToast('Connect GitHub in settings first', 'warning');
+        this.openSettingsPage();
+        return;
+      }
+
       const result = await chrome.runtime.sendMessage({ type: 'SYNC_WITH_GITHUB' });
       if (result.success) {
         this.showToast('Synced with GitHub', 'success');
