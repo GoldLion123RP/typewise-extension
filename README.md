@@ -121,9 +121,11 @@ Available variables:
 1. Open Options (click gear icon or right-click extension → Options)
 2. Go to the **Sync** tab
 3. Click **Connect GitHub Account**
-4. Authorize with GitHub OAuth
+4. Authorize with GitHub device flow in your browser
 5. ✅ Enable **Sync Enabled** toggle
 6. Optionally enable **Auto Backup**
+
+✨ Security note: the extension uses a public GitHub OAuth client ID and device flow, so no client secret is stored in the repo or required in the extension.
 
 ---
 
@@ -226,6 +228,7 @@ typewise-extension/
 - **Encrypted storage**: All snippets encrypted with AES before storing
 - **No telemetry**: No data sent to external servers (except GitHub Gist when enabled)
 - **Optional sync**: GitHub sync requires explicit user action
+- **Safer GitHub sign-in**: Uses device-flow authorization instead of exchanging an auth code inside the extension
 
 ### 🔐 Security Best Practices
 
