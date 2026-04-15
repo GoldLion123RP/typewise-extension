@@ -96,6 +96,26 @@ export class GistManager {
     throw new Error('GitHub device authorization expired before it was approved.');
   }
 
+  async fetchGitHubUsername(token: string): Promise<string> {
+    const response = await fetch(`${this.GITHUB_API}/user`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to verify GitHub account: ${response.statusText}`);
+    }
+
+    const user = await response.json() as { login?: string };
+    if (!user.login) {
+      throw new Error('GitHub account verification did not return a username.');
+    }
+
+    return user.login;
+  }
+
   async createOrUpdateGist(token: string, snippets: Snippet[]): Promise<string> {
     const user = await storage.getUser();
     const gistId = user.gistId;

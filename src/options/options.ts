@@ -450,7 +450,8 @@ class OptionsManager {
 
     try {
       const token = await gistManager.authenticate();
-      await storage.updateUser({ githubToken: token });
+      const githubUsername = await gistManager.fetchGitHubUsername(token);
+      await storage.updateUser({ githubToken: token, githubUsername });
       await this.updateGitHubStatus();
       this.showToast('Connected to GitHub successfully', 'success');
     } catch (error: unknown) {
