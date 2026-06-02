@@ -9,14 +9,17 @@ class BackgroundService {
     this.init();
   }
 
-  async init() {
-    await this.repairStorageCache();
+  init() {
+    this.repairStorageCache().catch(console.error);
 
     // Extension installed or updated
     chrome.runtime.onInstalled.addListener(this.handleInstalled.bind(this));
 
-    // Message handling
-    chrome.runtime.onMessage.addListener(this.handleMessage.bind(this));
+    // Message handling - Use wrapper for async support
+    chrome.runtime.onMessage.addListener((request: any, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) => {
+      this.handleMessageAsync(request, sender, sendResponse);
+      return true; // Keep message channel open for async response
+    });
 
     // Keyboard commands
     chrome.commands.onCommand.addListener(this.handleCommand.bind(this));
@@ -25,21 +28,21 @@ class BackgroundService {
     this.setupAutoSync();
   }
 
-  async handleInstalled(_details: chrome.runtime.InstalledDetails) {
+  private handleInstalled(_details: chrome.runtime.InstalledDetails) {
     // Clear all context menus first
-    await chrome.contextMenus.removeAll();
+    chrome.contextMenus.removeAll(() => {
+      // Create context menus
+      chrome.contextMenus.create({
+        id: 'typewise-insert',
+        title: 'TypeWise: Insert Snippet',
+        contexts: ['editable']
+      });
 
-    // Create context menus
-    chrome.contextMenus.create({
-      id: 'typewise-insert',
-      title: 'TypeWise: Insert Snippet',
-      contexts: ['editable']
-    });
-
-    chrome.contextMenus.create({
-      id: 'typewise-create',
-      title: 'TypeWise: Create Snippet from Selection',
-      contexts: ['selection']
+      chrome.contextMenus.create({
+        id: 'typewise-create',
+        title: 'TypeWise: Create Snippet from Selection',
+        contexts: ['selection']
+      });
     });
 
     chrome.contextMenus.onClicked.addListener((info: any, tab: chrome.tabs.Tab | undefined) => {
@@ -51,7 +54,7 @@ class BackgroundService {
     });
   }
 
-  async handleMessage(request: any, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) {
+  private async handleMessageAsync(request: any, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) {
     try {
       switch (request.type) {
         case 'GET_SNIPPETS':
@@ -114,10 +117,8 @@ class BackgroundService {
       }
     } catch (_error: any) {
       console.error('Background message error:', _error);
-      sendResponse({ success: false, error: _error.message });
+      sendResponse({ success: false, error: _error.message || 'An unexpected error occurred' });
     }
-
-    return true;
   }
 
   handleCommand(command: string) {

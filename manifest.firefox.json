@@ -1,8 +1,8 @@
 {
-  "manifest_version": 2,
-  "name": "TypeWise - Smart Text Expansion",
-  "short_name": "TypeWise FF",
-  "version": "0.0.1",
+  "manifest_version": 3,
+  "name": "TypeWise",
+  "short_name": "TypeWise",
+  "version": "1.0.0",
   "description": "Boost productivity with smart text expansion, snippets, and templates. Syncs with GitHub Gists.",
   "author": "Rahul Pal",
   "homepage_url": "https://github.com/GoldLion123RP/typewise-extension",
@@ -14,6 +14,9 @@
     "clipboardWrite",
     "identity",
     "notifications",
+    "scripting"
+  ],
+  "host_permissions": [
     "https://api.github.com/*",
     "https://gist.github.com/*"
   ],
@@ -21,9 +24,9 @@
     "scripts": [
       "background.js"
     ],
-    "persistent": false
+    "type": "module"
   },
-  "browser_action": {
+  "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "assets/icons/icon-16.png",
@@ -56,7 +59,7 @@
     "128": "assets/icons/icon-128.png"
   },
   "commands": {
-    "_execute_browser_action": {
+    "_execute_action": {
       "suggested_key": {
         "default": "Ctrl+Shift+Space",
         "mac": "Command+Shift+Space"
@@ -73,12 +76,8 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "typewise@example.com",
-      "data_collection_permissions": {
-        "required": [
-          "none"
-        ]
-      }
+      "id": "typewise@rahulpal.dev",
+      "strict_min_version": "109.0"
     }
   }
 }

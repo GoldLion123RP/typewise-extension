@@ -1,6 +1,6 @@
 {
   "name": "typewise-extension",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Smart text expansion extension with GitHub Gist sync",
   "main": "src/background/background.ts",
   "scripts": {
@@ -14,8 +14,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
-    "package:chrome": "npm run build:chrome && cd dist/chrome && bestzip ../../typewise-chrome.zip *",
-    "package:firefox": "npm run build:firefox && cd dist/firefox && bestzip ../../typewise-firefox.zip *"
+    "package:chrome": "npm run build:chrome && cd dist/chrome && bestzip ../../typewise-chrome-v1.0.0.zip *",
+    "package:firefox": "npm run build:firefox && cd dist/firefox && bestzip ../../typewise-firefox-v1.0.0.zip *"
   },
   "keywords": [
     "browser-extension",

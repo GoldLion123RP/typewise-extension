@@ -1,5 +1,6 @@
 # 🚀 TypeWise - Smart Text Expansion Extension
 
+> **Vision**: Bright yet deeply calming morning ambient track, slow acoustic guitar chords blending smoothly with traditional Indian tanpura and soft swararmandal textures. 432Hz tuning, airy and expansive atmosphere, zero beats, no drums, peaceful and seamless flow.
 
 A free, privacy-focused text expansion extension for Chrome and Firefox
 >👨‍💻 Developed by Rahul Pal with optional GitHub Gist sync for cloud backup and cross-device synchronization.

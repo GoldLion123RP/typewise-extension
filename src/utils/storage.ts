@@ -670,6 +670,10 @@ class StorageManager {
     const defaults = this.getDefaultData();
     const normalizedSnippets = this.sanitizeSnippets(value?.snippets);
 
+    // Handle legacy casing if present in incoming user data
+    const rawUser = (value?.user || {}) as any;
+    const gistId = rawUser.gistId || rawUser.gistid || defaults.user.gistId;
+
     return {
       ...defaults,
       ...value,
@@ -677,6 +681,7 @@ class StorageManager {
       user: {
         ...defaults.user,
         ...value?.user,
+        gistId, // Ensure correct casing is prioritized
         settings: {
           ...defaults.user.settings,
           ...value?.user?.settings,
