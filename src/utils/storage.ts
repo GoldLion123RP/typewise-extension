@@ -1,18 +1,26 @@
 // src/utils/storage.ts
-import { StorageData, Snippet, User, UserSettings } from '../types';
+import { StorageData, Snippet, User, UserSettings } from "../types";
 
-const STORAGE_KEY = 'typewise_data';
-const ENCRYPTION_KEY_STORAGE_KEY = 'typewise_encryption_key';
-const LEGACY_STORAGE_KEYS = ['typewiseData', 'typewise-data', 'typewise_storage'] as const;
-const LEGACY_SNIPPET_KEYS = [
-  'snippets',
-  'typewise_snippets',
-  'typewiseSnippets',
-  'snippet_list',
-  'savedSnippets',
-  'snippets_v1',
+const STORAGE_KEY = "typewise_data";
+const ENCRYPTION_KEY_STORAGE_KEY = "typewise_encryption_key";
+const LEGACY_STORAGE_KEYS = [
+  "typewiseData",
+  "typewise-data",
+  "typewise_storage",
 ] as const;
-const LEGACY_ENCRYPTION_KEYS = ['typewise:stable:v1', 'typewise:stable:v0', 'typewise-default-key'] as const;
+const LEGACY_SNIPPET_KEYS = [
+  "snippets",
+  "typewise_snippets",
+  "typewiseSnippets",
+  "snippet_list",
+  "savedSnippets",
+  "snippets_v1",
+] as const;
+const LEGACY_ENCRYPTION_KEYS = [
+  "typewise:stable:v1",
+  "typewise:stable:v0",
+  "typewise-default-key",
+] as const;
 const MAX_SHORTCUT_LENGTH = 64;
 const MAX_TITLE_LENGTH = 120;
 const MAX_CONTENT_LENGTH = 12000;
@@ -22,14 +30,19 @@ const MAX_TAG_COUNT = 20;
 class StorageManager {
   private writeQueue: Promise<void> = Promise.resolve();
   private encryptionKeyCache: string | null = null;
+  private migrationChecked = false;
 
   private asRecord(value: unknown): Record<string, unknown> {
-    return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+    return value && typeof value === "object"
+      ? (value as Record<string, unknown>)
+      : {};
   }
 
-  private async localGet(keys: string | string[]): Promise<Record<string, unknown>> {
+  private async localGet(
+    keys: string | string[],
+  ): Promise<Record<string, unknown>> {
     const area = chrome?.storage?.local;
-    if (!area || typeof area.get !== 'function') {
+    if (!area || typeof area.get !== "function") {
       return {};
     }
 
@@ -40,7 +53,10 @@ class StorageManager {
 
     try {
       const maybePromise = getAny.call(area, keys);
-      if (maybePromise && typeof (maybePromise as Promise<unknown>).then === 'function') {
+      if (
+        maybePromise &&
+        typeof (maybePromise as Promise<unknown>).then === "function"
+      ) {
         const data = await (maybePromise as Promise<unknown>);
         return this.asRecord(data);
       }
@@ -64,9 +80,11 @@ class StorageManager {
     });
   }
 
-  private async syncGet(keys: string | string[]): Promise<Record<string, unknown>> {
+  private async syncGet(
+    keys: string | string[],
+  ): Promise<Record<string, unknown>> {
     const area = chrome?.storage?.sync;
-    if (!area || typeof area.get !== 'function') {
+    if (!area || typeof area.get !== "function") {
       return {};
     }
 
@@ -77,7 +95,10 @@ class StorageManager {
 
     try {
       const maybePromise = getAny.call(area, keys);
-      if (maybePromise && typeof (maybePromise as Promise<unknown>).then === 'function') {
+      if (
+        maybePromise &&
+        typeof (maybePromise as Promise<unknown>).then === "function"
+      ) {
         const data = await (maybePromise as Promise<unknown>);
         return this.asRecord(data);
       }
@@ -103,7 +124,7 @@ class StorageManager {
 
   private async localSet(items: Record<string, unknown>): Promise<void> {
     const area = chrome?.storage?.local;
-    if (!area || typeof area.set !== 'function') {
+    if (!area || typeof area.set !== "function") {
       return;
     }
 
@@ -114,7 +135,10 @@ class StorageManager {
 
     try {
       const maybePromise = setAny.call(area, items);
-      if (maybePromise && typeof (maybePromise as Promise<unknown>).then === 'function') {
+      if (
+        maybePromise &&
+        typeof (maybePromise as Promise<unknown>).then === "function"
+      ) {
         await (maybePromise as Promise<unknown>);
         return;
       }
@@ -140,7 +164,7 @@ class StorageManager {
 
   private async syncSet(items: Record<string, unknown>): Promise<void> {
     const area = chrome?.storage?.sync;
-    if (!area || typeof area.set !== 'function') {
+    if (!area || typeof area.set !== "function") {
       return;
     }
 
@@ -151,7 +175,10 @@ class StorageManager {
 
     try {
       const maybePromise = setAny.call(area, items);
-      if (maybePromise && typeof (maybePromise as Promise<unknown>).then === 'function') {
+      if (
+        maybePromise &&
+        typeof (maybePromise as Promise<unknown>).then === "function"
+      ) {
         await (maybePromise as Promise<unknown>);
         return;
       }
@@ -177,7 +204,10 @@ class StorageManager {
 
   private generateRandomKey(): string {
     const bytes = new Uint8Array(32);
-    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    if (
+      typeof crypto !== "undefined" &&
+      typeof crypto.getRandomValues === "function"
+    ) {
       crypto.getRandomValues(bytes);
     } else {
       for (let i = 0; i < bytes.length; i += 1) {
@@ -186,8 +216,8 @@ class StorageManager {
     }
 
     return Array.from(bytes)
-      .map((value) => value.toString(16).padStart(2, '0'))
-      .join('');
+      .map((value) => value.toString(16).padStart(2, "0"))
+      .join("");
   }
 
   private async getOrCreateEncryptionKey(): Promise<string> {
@@ -195,8 +225,10 @@ class StorageManager {
       return this.encryptionKeyCache;
     }
 
-    const existing = this.asRecord(await this.localGet(ENCRYPTION_KEY_STORAGE_KEY))[ENCRYPTION_KEY_STORAGE_KEY];
-    if (typeof existing === 'string' && existing.length >= 32) {
+    const existing = this.asRecord(
+      await this.localGet(ENCRYPTION_KEY_STORAGE_KEY),
+    )[ENCRYPTION_KEY_STORAGE_KEY];
+    if (typeof existing === "string" && existing.length >= 32) {
       this.encryptionKeyCache = existing;
       return existing;
     }
@@ -207,14 +239,16 @@ class StorageManager {
     try {
       await this.localSet({ [ENCRYPTION_KEY_STORAGE_KEY]: generatedKey });
     } catch (error) {
-      console.warn('Unable to persist generated encryption key:', error);
+      console.warn("Unable to persist generated encryption key:", error);
     }
 
     return generatedKey;
   }
 
   private async getDecryptionKeys(): Promise<string[]> {
-    const runtimeLegacyKey = chrome?.runtime?.id ? `typewise:${chrome.runtime.id}:v1` : '';
+    const runtimeLegacyKey = chrome?.runtime?.id
+      ? `typewise:${chrome.runtime.id}:v1`
+      : "";
     return Array.from(
       new Set([
         await this.getOrCreateEncryptionKey(),
@@ -229,38 +263,48 @@ class StorageManager {
       const result = this.asRecord(await this.localGet(STORAGE_KEY));
       const encryptedLocal = result[STORAGE_KEY];
 
-      if (typeof encryptedLocal === 'string' && encryptedLocal.length > 0) {
+      if (typeof encryptedLocal === "string" && encryptedLocal.length > 0) {
         const decryptedLocal = await this.decrypt(encryptedLocal);
         if (decryptedLocal) {
           const normalized = this.normalizeStorageData(decryptedLocal);
           await this.ensurePlaintextMirrors(normalized);
+          this.migrationChecked = true;
           return normalized;
         }
       }
 
-      const legacyEncryptedResult = this.asRecord(await this.localGet([...LEGACY_STORAGE_KEYS]));
-      for (const key of LEGACY_STORAGE_KEYS) {
-        const candidate = legacyEncryptedResult[key];
+      if (!this.migrationChecked) {
+        const legacyEncryptedResult = this.asRecord(
+          await this.localGet([...LEGACY_STORAGE_KEYS]),
+        );
+        for (const key of LEGACY_STORAGE_KEYS) {
+          const candidate = legacyEncryptedResult[key];
 
-        if (typeof candidate === 'string' && candidate.length > 0) {
-          const decryptedLegacy = await this.decrypt(candidate);
-          if (decryptedLegacy) {
-            const normalizedLegacy = this.normalizeStorageData(decryptedLegacy);
+          if (typeof candidate === "string" && candidate.length > 0) {
+            const decryptedLegacy = await this.decrypt(candidate);
+            if (decryptedLegacy) {
+              const normalizedLegacy =
+                this.normalizeStorageData(decryptedLegacy);
+              await this.saveAll(normalizedLegacy);
+              this.migrationChecked = true;
+              return normalizedLegacy;
+            }
+          }
+
+          if (candidate && typeof candidate === "object") {
+            const normalizedLegacy = this.normalizeStorageData(
+              candidate as Partial<StorageData>,
+            );
             await this.saveAll(normalizedLegacy);
+            this.migrationChecked = true;
             return normalizedLegacy;
           }
-        }
-
-        if (candidate && typeof candidate === 'object') {
-          const normalizedLegacy = this.normalizeStorageData(candidate as Partial<StorageData>);
-          await this.saveAll(normalizedLegacy);
-          return normalizedLegacy;
         }
       }
 
       const syncResult = this.asRecord(await this.syncGet(STORAGE_KEY));
       const encryptedSync = syncResult[STORAGE_KEY];
-      if (typeof encryptedSync === 'string' && encryptedSync.length > 0) {
+      if (typeof encryptedSync === "string" && encryptedSync.length > 0) {
         const decryptedSync = await this.decrypt(encryptedSync);
         if (decryptedSync) {
           const normalizedSync = this.normalizeStorageData(decryptedSync);
@@ -269,7 +313,7 @@ class StorageManager {
         }
       }
 
-      const localFallback = this.asRecord(await this.localGet(['settings']));
+      const localFallback = this.asRecord(await this.localGet(["settings"]));
       const fallbackSettings = this.asRecord(localFallback.settings);
       const localSnippets = await this.getLegacySnippetCandidates();
       if (localSnippets.length > 0) {
@@ -292,7 +336,7 @@ class StorageManager {
 
       return this.getDefaultData();
     } catch (error) {
-      console.error('Error getting storage:', error);
+      console.error("Error getting storage:", error);
       return this.getDefaultData();
     }
   }
@@ -308,7 +352,7 @@ class StorageManager {
         settings: normalized.user.settings,
       });
     } catch (error) {
-      console.error('Error saving local storage:', error);
+      console.error("Error saving local storage:", error);
       throw error;
     }
 
@@ -316,16 +360,22 @@ class StorageManager {
       try {
         await this.syncSet({ [STORAGE_KEY]: encrypted });
       } catch (error) {
-        console.warn('Unable to sync encrypted storage to chrome.storage.sync:', error);
+        console.warn(
+          "Unable to sync encrypted storage to chrome.storage.sync:",
+          error,
+        );
       }
     }
   }
 
   async getSnippets(): Promise<Snippet[]> {
     const data = await this.getAll();
-    const localPrimary = this.asRecord(await this.localGet('snippets'));
+    const localPrimary = this.asRecord(await this.localGet("snippets"));
     const localPrimarySnippets = this.sanitizeSnippets(localPrimary.snippets);
-    const localSnippets = this.mergeSnippets(await this.getLegacySnippetCandidates(), localPrimarySnippets);
+    const localSnippets = this.mergeSnippets(
+      await this.getLegacySnippetCandidates(),
+      localPrimarySnippets,
+    );
     const encryptedSnippets = this.sanitizeSnippets(data.snippets);
     const mergedSnippets = this.mergeSnippets(localSnippets, encryptedSnippets);
 
@@ -347,11 +397,16 @@ class StorageManager {
   async saveSnippet(snippet: Snippet): Promise<void> {
     await this.enqueueWrite(async () => {
       const data = await this.getAll();
-      const snippets = this.mergeSnippets(this.sanitizeSnippets(data.snippets), await this.getLegacySnippetCandidates());
+      const snippets = this.mergeSnippets(
+        this.sanitizeSnippets(data.snippets),
+        await this.getLegacySnippetCandidates(),
+      );
       const normalized = this.normalizeSnippet(snippet, snippets.length);
 
       if (!normalized) {
-        throw new Error('Snippet is invalid. Ensure title, shortcut, and content are valid.');
+        throw new Error(
+          "Snippet is invalid. Ensure title, shortcut, and content are valid.",
+        );
       }
 
       const index = snippets.findIndex((s) => s.id === normalized.id);
@@ -368,7 +423,10 @@ class StorageManager {
       try {
         await this.saveAll({ ...data, snippets });
       } catch (error) {
-        console.warn('Unable to sync encrypted storage after saveSnippet:', error);
+        console.warn(
+          "Unable to sync encrypted storage after saveSnippet:",
+          error,
+        );
       }
     });
   }
@@ -376,14 +434,19 @@ class StorageManager {
   async deleteSnippet(id: string): Promise<void> {
     await this.enqueueWrite(async () => {
       const data = await this.getAll();
-      const snippets = this.sanitizeSnippets(data.snippets).filter((s) => s.id !== id);
+      const snippets = this.sanitizeSnippets(data.snippets).filter(
+        (s) => s.id !== id,
+      );
 
       await this.localSet({ snippets });
 
       try {
         await this.saveAll({ ...data, snippets });
       } catch (error) {
-        console.warn('Unable to sync encrypted storage after deleteSnippet:', error);
+        console.warn(
+          "Unable to sync encrypted storage after deleteSnippet:",
+          error,
+        );
       }
     });
   }
@@ -404,7 +467,11 @@ class StorageManager {
   async updateSettings(settings: Partial<UserSettings>): Promise<void> {
     await this.enqueueWrite(async () => {
       const data = await this.getAll();
-      data.user.settings = { ...data.user.settings, ...settings, theme: 'dark' };
+      data.user.settings = {
+        ...data.user.settings,
+        ...settings,
+        theme: "dark",
+      };
       await this.saveAll(data);
     });
   }
@@ -413,19 +480,19 @@ class StorageManager {
     const encryptionKey = await this.getOrCreateEncryptionKey();
     const keyBuffer = this.hexToBuffer(encryptionKey);
     const cryptoKey = await crypto.subtle.importKey(
-      'raw',
+      "raw",
       keyBuffer,
-      { name: 'AES-GCM', length: 256 },
+      { name: "AES-GCM", length: 256 },
       false,
-      ['encrypt']
+      ["encrypt"],
     );
 
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const encodedData = new TextEncoder().encode(JSON.stringify(data));
     const ciphertext = await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv },
+      { name: "AES-GCM", iv },
       cryptoKey,
-      encodedData
+      encodedData,
     );
 
     // Combine IV and ciphertext
@@ -438,7 +505,9 @@ class StorageManager {
 
   private async decrypt(encryptedData: string): Promise<StorageData | null> {
     try {
-      const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
+      const combined = Uint8Array.from(atob(encryptedData), (c) =>
+        c.charCodeAt(0),
+      );
       const iv = combined.slice(0, 12);
       const ciphertext = combined.slice(12);
 
@@ -446,17 +515,17 @@ class StorageManager {
         try {
           const keyBuffer = this.hexToBuffer(key);
           const cryptoKey = await crypto.subtle.importKey(
-            'raw',
+            "raw",
             keyBuffer,
-            { name: 'AES-GCM', length: 256 },
+            { name: "AES-GCM", length: 256 },
             false,
-            ['decrypt']
+            ["decrypt"],
           );
 
           const decrypted = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv },
+            { name: "AES-GCM", iv },
             cryptoKey,
-            ciphertext
+            ciphertext,
           );
           const decoded = new TextDecoder().decode(decrypted);
           if (!decoded) {
@@ -464,7 +533,7 @@ class StorageManager {
           }
 
           const parsed = JSON.parse(decoded) as Partial<StorageData>;
-          if (parsed && typeof parsed === 'object') {
+          if (parsed && typeof parsed === "object") {
             return this.normalizeStorageData(parsed);
           }
         } catch {
@@ -472,26 +541,26 @@ class StorageManager {
         }
       }
     } catch (error) {
-      console.warn('Error during decryption:', error);
+      console.warn("Error during decryption:", error);
     }
 
     // Try legacy format (plaintext JSON)
     try {
       const parsed = JSON.parse(encryptedData) as Partial<StorageData>;
-      if (parsed && typeof parsed === 'object') {
+      if (parsed && typeof parsed === "object") {
         return this.normalizeStorageData(parsed);
       }
     } catch {
       // Not a plain JSON payload.
     }
 
-    console.warn('Unable to decrypt storage payload with known keys.');
+    console.warn("Unable to decrypt storage payload with known keys.");
     return null;
   }
 
   private hexToBuffer(hex: string): ArrayBuffer {
     if (hex.length % 2 !== 0) {
-      throw new Error('Invalid hex string');
+      throw new Error("Invalid hex string");
     }
     const buffer = new Uint8Array(hex.length / 2);
     for (let i = 0; i < hex.length; i += 2) {
@@ -505,57 +574,59 @@ class StorageManager {
       snippets: [],
       user: {
         settings: {
-          theme: 'dark',
-          triggerKey: '/',
+          theme: "dark",
+          triggerKey: "/",
           caseSensitive: false,
           showNotifications: true,
           syncEnabled: false,
           autoBackup: true,
-          expandDelay: 0
-        }
+          expandDelay: 0,
+          playSounds: true,
+          soundVolume: 30,
+        },
       },
-      encryptionEnabled: true
+      encryptionEnabled: true,
     };
   }
 
   private getDefaultSnippets(): Snippet[] {
     return [
       {
-        id: 'default-1',
-        shortcut: '/hello',
-        content: 'Hello! How can I help you today?',
-        title: 'Greeting',
-        category: 'General',
-        tags: ['greeting', 'intro'],
+        id: "default-1",
+        shortcut: "/hello",
+        content: "Hello! How can I help you today?",
+        title: "Greeting",
+        category: "General",
+        tags: ["greeting", "intro"],
         usageCount: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        isActive: true
+        isActive: true,
       },
       {
-        id: 'default-2',
-        shortcut: '/thanks',
-        content: 'Thank you for your time. Have a great day!',
-        title: 'Thank You',
-        category: 'General',
-        tags: ['thanks', 'closing'],
+        id: "default-2",
+        shortcut: "/thanks",
+        content: "Thank you for your time. Have a great day!",
+        title: "Thank You",
+        category: "General",
+        tags: ["thanks", "closing"],
         usageCount: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        isActive: true
+        isActive: true,
       },
       {
-        id: 'default-3',
-        shortcut: '/email',
-        content: 'Best regards,\nRahul Pal',
-        title: 'Email Signature',
-        category: 'Email',
-        tags: ['email', 'signature'],
+        id: "default-3",
+        shortcut: "/email",
+        content: "Best regards,\nRahul Pal",
+        title: "Email Signature",
+        category: "Email",
+        tags: ["email", "signature"],
         usageCount: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        isActive: true
-      }
+        isActive: true,
+      },
     ];
   }
 
@@ -571,7 +642,7 @@ class StorageManager {
       if (Array.isArray(data)) {
         const snippets = this.sanitizeSnippets(data);
         if (snippets.length === 0) {
-          throw new Error('No valid snippets found');
+          throw new Error("No valid snippets found");
         }
 
         const current = await this.getAll();
@@ -579,10 +650,10 @@ class StorageManager {
         return;
       }
 
-      if (data && typeof data === 'object' && Array.isArray(data.snippets)) {
+      if (data && typeof data === "object" && Array.isArray(data.snippets)) {
         const snippets = this.sanitizeSnippets(data.snippets);
         if (snippets.length === 0) {
-          throw new Error('No valid snippets found');
+          throw new Error("No valid snippets found");
         }
 
         const current = await this.getAll();
@@ -601,9 +672,9 @@ class StorageManager {
         return;
       }
 
-      throw new Error('Unsupported import format');
+      throw new Error("Unsupported import format");
     } catch (_error) {
-      throw new Error('Invalid import data format');
+      throw new Error("Invalid import data format");
     }
   }
 
@@ -616,11 +687,27 @@ class StorageManager {
   }
 
   private normalizeSnippet(value: unknown, index: number): Snippet | null {
-    if (!value || typeof value !== 'object') return null;
+    if (!value || typeof value !== "object") return null;
     const item = value as Record<string, unknown>;
 
-    const rawShortcut = this.pickString(item.shortcut, item.trigger, item.abbr, item.key, item.keyword, item.code);
-    const rawContent = this.pickString(item.content, item.text, item.value, item.body, item.snippet, item.expansion, item.phrase, item.template);
+    const rawShortcut = this.pickString(
+      item.shortcut,
+      item.trigger,
+      item.abbr,
+      item.key,
+      item.keyword,
+      item.code,
+    );
+    const rawContent = this.pickString(
+      item.content,
+      item.text,
+      item.value,
+      item.body,
+      item.snippet,
+      item.expansion,
+      item.phrase,
+      item.template,
+    );
     if (!rawShortcut || !rawContent) return null;
 
     const shortcut = rawShortcut.trim().slice(0, MAX_SHORTCUT_LENGTH);
@@ -628,45 +715,60 @@ class StorageManager {
     if (!shortcut || !content || /\s/.test(shortcut)) return null;
 
     const now = new Date().toISOString();
-    const tags = (Array.isArray(item.tags)
-      ? item.tags.filter((tag): tag is string => typeof tag === 'string').map((tag) => tag.trim()).filter(Boolean)
-      : this.pickString(item.tags)
-          ?.split(',')
-          .map((tag) => tag.trim())
-          .filter(Boolean) || [])
+    const tags = (
+      Array.isArray(item.tags)
+        ? item.tags
+            .filter((tag): tag is string => typeof tag === "string")
+            .map((tag) => tag.trim())
+            .filter(Boolean)
+        : this.pickString(item.tags)
+            ?.split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean) || []
+    )
       .slice(0, MAX_TAG_COUNT)
       .map((tag) => tag.slice(0, MAX_TAG_LENGTH));
 
-    const title = (this.pickString(item.title, item.name, item.label, item.shortcut) || `Snippet ${index + 1}`).slice(
-      0,
-      MAX_TITLE_LENGTH,
-    );
+    const title = (
+      this.pickString(item.title, item.name, item.label, item.shortcut) ||
+      `Snippet ${index + 1}`
+    ).slice(0, MAX_TITLE_LENGTH);
 
     return {
-      id: this.pickString(item.id, item._id, item.uuid) || `snippet-${Date.now()}-${index}`,
+      id:
+        this.pickString(item.id, item._id, item.uuid) ||
+        `snippet-${Date.now()}-${index}`,
       title,
       shortcut,
       content,
-      category: this.pickString(item.category, item.group, item.type) || 'General',
+      category:
+        this.pickString(item.category, item.group, item.type) || "General",
       tags,
-      usageCount: typeof item.usageCount === 'number' && item.usageCount >= 0 ? item.usageCount : 0,
+      usageCount:
+        typeof item.usageCount === "number" && item.usageCount >= 0
+          ? item.usageCount
+          : 0,
       createdAt: this.pickString(item.createdAt) || now,
       updatedAt: this.pickString(item.updatedAt) || now,
       isActive:
-        typeof item.isActive === 'boolean'
+        typeof item.isActive === "boolean"
           ? item.isActive
-          : typeof item.enabled === 'boolean'
+          : typeof item.enabled === "boolean"
             ? item.enabled
             : true,
     };
   }
 
   private pickString(...values: unknown[]): string | undefined {
-    const found = values.find((value) => typeof value === 'string' && value.trim().length > 0) as string | undefined;
+    const found = values.find(
+      (value) => typeof value === "string" && value.trim().length > 0,
+    ) as string | undefined;
     return found?.trim();
   }
 
-  private normalizeStorageData(value: Partial<StorageData> | undefined): StorageData {
+  private normalizeStorageData(
+    value: Partial<StorageData> | undefined,
+  ): StorageData {
     const defaults = this.getDefaultData();
     const normalizedSnippets = this.sanitizeSnippets(value?.snippets);
 
@@ -677,7 +779,8 @@ class StorageManager {
     return {
       ...defaults,
       ...value,
-      snippets: normalizedSnippets.length > 0 ? normalizedSnippets : defaults.snippets,
+      snippets:
+        normalizedSnippets.length > 0 ? normalizedSnippets : defaults.snippets,
       user: {
         ...defaults.user,
         ...value?.user,
@@ -687,11 +790,17 @@ class StorageManager {
           ...value?.user?.settings,
         },
       },
-      encryptionEnabled: typeof value?.encryptionEnabled === 'boolean' ? value.encryptionEnabled : true,
+      encryptionEnabled:
+        typeof value?.encryptionEnabled === "boolean"
+          ? value.encryptionEnabled
+          : true,
     };
   }
 
-  private mergeSnippets(localSnippets: Snippet[], encryptedSnippets: Snippet[]): Snippet[] {
+  private mergeSnippets(
+    localSnippets: Snippet[],
+    encryptedSnippets: Snippet[],
+  ): Snippet[] {
     const merged = new Map<string, Snippet>();
 
     const upsertSnippet = (snippet: Snippet) => {
@@ -701,8 +810,10 @@ class StorageManager {
         return;
       }
 
-      const existingTime = Date.parse(existing.updatedAt || existing.createdAt || '') || 0;
-      const incomingTime = Date.parse(snippet.updatedAt || snippet.createdAt || '') || 0;
+      const existingTime =
+        Date.parse(existing.updatedAt || existing.createdAt || "") || 0;
+      const incomingTime =
+        Date.parse(snippet.updatedAt || snippet.createdAt || "") || 0;
       if (incomingTime >= existingTime) {
         merged.set(snippet.id, snippet);
       }
@@ -712,8 +823,8 @@ class StorageManager {
     localSnippets.forEach(upsertSnippet);
 
     return Array.from(merged.values()).sort((a, b) => {
-      const aTime = Date.parse(a.updatedAt || a.createdAt || '') || 0;
-      const bTime = Date.parse(b.updatedAt || b.createdAt || '') || 0;
+      const aTime = Date.parse(a.updatedAt || a.createdAt || "") || 0;
+      const bTime = Date.parse(b.updatedAt || b.createdAt || "") || 0;
       return bTime - aTime;
     });
   }
@@ -722,7 +833,9 @@ class StorageManager {
     if (a.length !== b.length) return true;
 
     const sortById = (items: Snippet[]) =>
-      [...items].sort((x, y) => x.id.localeCompare(y.id)).map((item) => JSON.stringify(item));
+      [...items]
+        .sort((x, y) => x.id.localeCompare(y.id))
+        .map((item) => JSON.stringify(item));
 
     const left = sortById(a);
     const right = sortById(b);
@@ -737,11 +850,14 @@ class StorageManager {
         settings: data.user.settings,
       });
     } catch (error) {
-      console.warn('Unable to ensure plaintext mirrors:', error);
+      console.warn("Unable to ensure plaintext mirrors:", error);
     }
   }
 
   private async getLegacySnippetCandidates(): Promise<Snippet[]> {
+    if (this.migrationChecked) {
+      return [];
+    }
     const keys = [...LEGACY_SNIPPET_KEYS];
     if (keys.length === 0) {
       return [];
@@ -754,6 +870,7 @@ class StorageManager {
       all = all.concat(this.sanitizeSnippets(result[key]));
     }
 
+    this.migrationChecked = true;
     return this.mergeSnippets([], all);
   }
 

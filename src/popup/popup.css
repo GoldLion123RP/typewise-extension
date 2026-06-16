@@ -1,16 +1,18 @@
-html,
-body {
-  width: 390px;
-  height: 580px;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
+html {
+  background: transparent;
 }
 
 body {
+  width: 410px;
+  height: 600px;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: transparent;
   display: flex;
   justify-content: stretch;
   align-items: stretch;
+  overflow: hidden;
 }
 
 .popup-container {
@@ -20,13 +22,23 @@ body {
   display: flex;
   flex-direction: column;
   background:
-    radial-gradient(circle at 100% 0%, rgba(0, 112, 243, 0.18), transparent 44%),
-    radial-gradient(circle at 0% 100%, rgba(20, 255, 236, 0.12), transparent 46%),
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(0, 112, 243, 0.18),
+      transparent 44%
+    ),
+    radial-gradient(
+      circle at 0% 100%,
+      rgba(20, 255, 236, 0.12),
+      transparent 46%
+    ),
     rgba(10, 11, 14, 0.95);
-  border: 1px solid var(--border);
-  border-radius: 18px;
+  border: none;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: var(--shadow-lift);
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .header {
@@ -122,7 +134,11 @@ body {
   font: inherit;
   appearance: none;
   color: inherit;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    background 0.2s ease;
 }
 
 .stat-action:hover {
@@ -198,7 +214,10 @@ body {
   border-radius: 11px;
   background: rgba(13, 16, 21, 0.82);
   padding: 10px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .snippet-item:hover {
@@ -281,7 +300,10 @@ body {
   cursor: pointer;
   font-size: 12px;
   color: var(--text-secondary);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease;
 }
 
 .snippet-action:hover {
@@ -320,4 +342,33 @@ body {
 #snippetModal .modal-content {
   border-color: var(--border);
   background: var(--bg-surface-strong);
+}
+
+/* Mobile responsive styles specifically for Firefox Android */
+html.mobile,
+body.mobile {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: auto;
+}
+
+html.mobile .popup-container,
+body.mobile .popup-container {
+  width: 100% !important;
+  height: 100vh !important;
+  border-radius: 0 !important;
+  border: none !important;
+}
+
+/* Expand touch points to meet the 44px standard on mobile */
+body.mobile .btn,
+body.mobile .nav-item,
+body.mobile .snippet-action,
+body.mobile .close-btn,
+body.mobile .icon-btn,
+body.mobile .stat-action {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }

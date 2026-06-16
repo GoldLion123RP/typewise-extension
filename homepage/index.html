@@ -3,13 +3,28 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TypeWise | Ultra-Fast Privacy-First Text Expander for Firefox & Chrome</title>
     <meta
       name="description"
-      content="TypeWise is a smart text expansion extension with snippets, templates, and optional GitHub Gist sync."
+      content="Boost your writing speed and productivity with TypeWise. A modern, local-first text expansion browser extension with variables, rich text templates, and private GitHub Gist sync. Tailored for Firefox, Zen Browser, and Chrome."
     />
+    <meta name="keywords" content="text expander, text expansion, Zen Browser, Firefox extension, Chrome extension, productivity tool, writing automation, private sync, local first" />
+    <meta name="author" content="Rahul Pal" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="TypeWise | Ultra-Fast Privacy-First Text Expander" />
+    <meta property="og:description" content="Automate repetitive writing with TypeWise, a privacy-first, local-first text expansion extension for Zen Browser, Firefox, and Chrome." />
+    <meta property="og:image" content="../assets/icons/icon-128.png" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary" />
+    <meta property="twitter:title" content="TypeWise | Ultra-Fast Privacy-First Text Expander" />
+    <meta property="twitter:description" content="Automate repetitive writing with TypeWise, a privacy-first, local-first text expansion extension for Zen Browser, Firefox, and Chrome." />
+    
     <meta name="theme-color" content="#0b1020" />
-    <title>TypeWise - Smart Text Expansion</title>
-    <link rel="icon" href="assets/icons/icon-128.png" type="image/png" />
+    <link rel="icon" href="../assets/icons/icon-32.png" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -25,8 +40,8 @@
         <a class="brand" href="#home" aria-label="TypeWise home">
           <img
             class="brand__icon"
-            src="assets/icons/icon-128.png"
-            onerror="this.onerror=null;this.src='../assets/icons/icon-128.png';"
+            src="../assets/icons/icon-48.png"
+            onerror="this.onerror=null;this.src='../assets/icons/icon-48.png';"
             alt=""
             aria-hidden="true"
             width="36"
@@ -34,7 +49,7 @@
           />
           <span class="brand__text">
             <strong>TypeWise</strong>
-            <small>Smart text expansion</small>
+            <small>Precision Text Expansion</small>
           </span>
         </a>
 
@@ -42,12 +57,13 @@
           <a href="#features">Features</a>
           <a href="#workflow">Workflow</a>
           <a href="#sync">Privacy</a>
+          <a href="#faq">FAQ</a>
           <a href="#start">Get started</a>
         </nav>
 
         <div class="topbar__actions">
           <a class="button button--ghost" href="https://github.com/GoldLion123RP/typewise-extension" target="_blank" rel="noreferrer">GitHub</a>
-          <a class="button button--solid" href="#start">Explore</a>
+          <a class="button button--solid" href="#start">Install</a>
         </div>
       </header>
 
@@ -56,31 +72,31 @@
           <div class="hero__copy">
             <div class="eyebrow">
               <span class="eyebrow__dot"></span>
-              Chrome and Firefox extension
+              Zen Browser, Firefox & Chrome Native
             </div>
-            <h1>Text expansion that stays out of the way and moves you faster.</h1>
+            <h1>Smart text expansion that stays out of the way.</h1>
             <p class="hero__lede">
-              TypeWise turns short triggers into polished snippets, dynamic templates, and reusable replies.
-              It is local-first by default, with optional GitHub Gist sync for cloud backup and cross-device workflows.
+              TypeWise turns short keyboard shortcuts into polished snippets, dynamic templates, and reusable replies. 
+              Run it local-first with optional encrypted sync via private GitHub Gists.
             </p>
 
             <div class="hero__actions">
               <a class="button button--solid" href="#features">See features</a>
-              <button class="button button--ghost" type="button" data-copy="npm install && npm run build:chrome">Copy quick start</button>
+              <a class="button button--ghost" href="#start">Get Started</a>
             </div>
 
             <dl class="metrics" aria-label="Product highlights">
               <div>
                 <dt>Instant</dt>
-                <dd>Trigger-based expansion in any input field.</dd>
+                <dd>Instant trigger expansions on any site you use.</dd>
               </div>
               <div>
                 <dt>Private</dt>
-                <dd>Encrypted local storage with optional Gist sync.</dd>
+                <dd>256-bit AES-GCM encrypted local databases.</dd>
               </div>
               <div>
-                <dt>Keyboard-first</dt>
-                <dd>Popup, search, and quick access from shortcuts.</dd>
+                <dt>Command Palette</dt>
+                <dd>Keyboard spotlight search at Ctrl+Space.</dd>
               </div>
             </dl>
           </div>
@@ -104,7 +120,7 @@
             <div class="demo-grid">
               <article class="mini-card">
                 <span class="mini-card__label">Dynamic variables</span>
-                <strong>{{date}} · {{time}} · {{year}}</strong>
+                <strong>{{date}} · {{time}} · {{clipboard}}</strong>
               </article>
               <article class="mini-card mini-card--accent">
                 <span class="mini-card__label">Sync</span>
@@ -128,10 +144,11 @@ Hello, how can I help?</code></pre>
           <div class="marquee__track">
             <span>Local-first storage</span>
             <span>Optional Gist sync</span>
-            <span>Chrome and Firefox</span>
+            <span>Firefox & Zen Browser optimized</span>
+            <span>Chromium compatible</span>
             <span>Import and export</span>
-            <span>Quick popup access</span>
-            <span>Context menus</span>
+            <span>Quick search command palette</span>
+            <span>Interactive forms</span>
           </div>
         </section>
 
@@ -140,40 +157,50 @@ Hello, how can I help?</code></pre>
             <p class="section-heading__eyebrow">Why TypeWise</p>
             <h2>Designed for people who write the same things again and again.</h2>
             <p>
-              The extension blends speed, clarity, and control so you can manage snippets without turning your browser into another app to babysit.
+              TypeWise blends speed, clarity, and control so you can manage snippets without turning your browser into another app to babysit.
             </p>
           </div>
 
           <div class="feature-grid">
             <article class="feature-card">
               <span class="feature-card__icon">01</span>
-              <h3>Trigger-based expansion</h3>
-              <p>Type a shortcut prefix and expand instantly in text fields, forms, and editors.</p>
+              <h3>Flexible Triggers</h3>
+              <p>Configure custom trigger prefixes like <code>/</code>, <code>;</code>, <code>:</code>, or <code>!</code>, or go prefix-less to trigger expansions on exact match plus Space or Tab.</p>
             </article>
             <article class="feature-card">
               <span class="feature-card__icon">02</span>
-              <h3>Dynamic snippets</h3>
-              <p>Use placeholders like date, time, year, and timestamp to keep snippets current.</p>
+              <h3>Case Sensitivity Toggles</h3>
+              <p>Select case-sensitivity preferences per shortcut. Distinguish between <code>/btw</code> and <code>/BTW</code>, or disable it for loose casing matches.</p>
             </article>
             <article class="feature-card">
               <span class="feature-card__icon">03</span>
-              <h3>Fast snippet management</h3>
-              <p>Search, filter, and organize content from the popup and options page.</p>
+              <h3>Expansion Click Sounds</h3>
+              <p>Hear tactile, synthesized click sounds instantly generated via Web Audio API oscillators upon successful snippet expansions.</p>
             </article>
             <article class="feature-card">
               <span class="feature-card__icon">04</span>
-              <h3>Import and export</h3>
-              <p>Move snippets around with JSON backup and restore when you need portability.</p>
+              <h3>Expansion Delays</h3>
+              <p>Apply custom delays (up to 5 seconds) to prevent accidental expansions or to allow a brief preview window to cancel text replacement.</p>
             </article>
             <article class="feature-card">
               <span class="feature-card__icon">05</span>
-              <h3>Optional cloud sync</h3>
-              <p>Back up snippets to a private GitHub Gist and keep them synced across devices.</p>
+              <h3>Combobox & Rich Editors</h3>
+              <p>Seamlessly expands in standard text inputs, contenteditables, and custom rich text fields using <code>role="textbox"</code> or <code>role="combobox"</code>.</p>
             </article>
             <article class="feature-card">
               <span class="feature-card__icon">06</span>
-              <h3>Privacy-conscious by default</h3>
-              <p>Works fully offline until you explicitly connect your GitHub account for sync.</p>
+              <h3>Interactive Forms</h3>
+              <p>Prompt for customized placeholders dynamically when you expand your shortcut using Tab and Enter to fill out variables on the fly.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-card__icon">07</span>
+              <h3>Secure Cloud Sync</h3>
+              <p>Optionally sync your local database with private GitHub Gists, encrypted using 256-bit AES-GCM local keys before transit.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-card__icon">08</span>
+              <h3>Import & Export</h3>
+              <p>Move your configuration and database of shortcuts easily with standardized JSON import/export controls.</p>
             </article>
           </div>
         </section>
@@ -228,17 +255,62 @@ Hello, how can I help?</code></pre>
           </ul>
         </section>
 
+        <section id="faq" class="section section--stacked" data-reveal>
+          <div class="section-heading">
+            <p class="section-heading__eyebrow">FAQ</p>
+            <h2>Frequently Asked Questions</h2>
+            <p>Everything you need to know about TypeWise and how it fits your workflow.</p>
+          </div>
+
+          <div class="faq-grid" style="display: grid; gap: 24px; max-width: 800px; margin: 40px auto 0; text-align: left;">
+            <div class="faq-item" style="border-bottom: 1px solid var(--border); padding-bottom: 20px;">
+              <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text);">What is TypeWise?</h3>
+              <p style="color: var(--muted); font-size: 15px; line-height: 1.6;">TypeWise is a modern, client-side text expansion browser extension designed for Zen Browser, Firefox, and Chrome. It allows you to create short triggers (like <code style="font-family: monospace; color: var(--accent);">/thanks</code>) that instantly expand into rich text snippets, templates, or template paragraphs with dynamic variables.</p>
+            </div>
+            
+            <div class="faq-item" style="border-bottom: 1px solid var(--border); padding-bottom: 20px;">
+              <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text);">Is my data private and secure?</h3>
+              <p style="color: var(--muted); font-size: 15px; line-height: 1.6;">Absolutely. TypeWise is built on a privacy-first, local-only architecture. Your snippets are stored locally in your browser's storage using 256-bit AES-GCM encryption. We do not run any servers, track your keystrokes, or collect telemetry. Everything stays on your machine.</p>
+            </div>
+            
+            <div class="faq-item" style="border-bottom: 1px solid var(--border); padding-bottom: 20px;">
+              <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text);">How does the GitHub Gist synchronization work?</h3>
+              <p style="color: var(--muted); font-size: 15px; line-height: 1.6;">If you want to sync your snippets across devices or keep a backup, you can optionally connect your GitHub account. TypeWise encrypts your snippets locally and pushes them to a private GitHub Gist in your own account, ensuring that even GitHub cannot read your plaintext content.</p>
+            </div>
+
+            <div class="faq-item" style="border-bottom: 1px solid var(--border); padding-bottom: 20px;">
+              <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text);">Does it support contenteditable editors and rich text?</h3>
+              <p style="color: var(--muted); font-size: 15px; line-height: 1.6;">Yes. TypeWise supports standard text input fields as well as modern contenteditable editors used by platforms like Gmail, Notion, Slack, Discord, Google Docs, and GitHub comments. It also supports rich HTML styling inside expanded content.</p>
+            </div>
+
+            <div class="faq-item" style="border-bottom: 1px solid var(--border); padding-bottom: 20px;">
+              <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text);">How do dynamic variables and forms work?</h3>
+              <p style="color: var(--muted); font-size: 15px; line-height: 1.6;">You can add placeholders like <code style="font-family: monospace; color: var(--accent);">{{date}}</code> or create interactive blanks (e.g. <code style="font-family: monospace; color: var(--accent);">{{name:text}}</code>) inside your snippets. When expanding, TypeWise displays a beautiful, sleek overlay form at your cursor, allowing you to fill in the blanks using Tab and Enter to customize the snippet on the fly.</p>
+            </div>
+
+            <div class="faq-item" style="border-bottom: 1px solid var(--border); padding-bottom: 20px;">
+              <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text);">Can I play a sound upon expansion?</h3>
+              <p style="color: var(--muted); font-size: 15px; line-height: 1.6;">Yes, TypeWise has built-in audio feedback settings. When enabled, a subtle, tactile confirmation click sound is synthesized locally using the Web Audio API (sine oscillators) each time a snippet expands. No audio files are loaded, maintaining lightweight performance and privacy.</p>
+            </div>
+
+            <div class="faq-item" style="padding-bottom: 20px;">
+              <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text);">What triggers and case options do I have?</h3>
+              <p style="color: var(--muted); font-size: 15px; line-height: 1.6;">You can choose from multiple prefix trigger characters (<code>/</code>, <code>;</code>, <code>:</code>, <code>!</code>) or disable the prefix key entirely to match shortcuts directly upon pressing Space or Tab. You can also toggle case sensitivity globally or per snippet to distinguish between casing forms (like matching only lowercase <code>/email</code> vs. mixed-case).</p>
+            </div>
+          </div>
+        </section>
+
         <section id="start" class="section cta-card" data-reveal>
           <div>
             <p class="section-heading__eyebrow">Get started</p>
-            <h2>Deploy this page from the homepage folder on the main branch.</h2>
+            <h2>Ready to supercharge your writing productivity?</h2>
             <p>
-              This homepage lives in a dedicated homepage folder so the repo root stays focused on the extension. Enable GitHub Pages through GitHub Actions and publish the homepage folder directly from main.
+              Install TypeWise for Zen Browser, Firefox, or Chrome and experience local-first, blazing fast text expansion today. Open-source, secure, and built for speed.
             </p>
           </div>
           <div class="cta-card__actions">
-            <a class="button button--solid" href="https://github.com/GoldLion123RP/typewise-extension" target="_blank" rel="noreferrer">Open repository</a>
-            <a class="button button--ghost" href="#home">Back to top</a>
+            <a class="button button--solid" href="#start">Download Extension</a>
+            <a class="button button--ghost" href="https://github.com/GoldLion123RP/typewise-extension" target="_blank" rel="noreferrer">View on GitHub</a>
           </div>
         </section>
       </main>
@@ -250,7 +322,7 @@ Hello, how can I help?</code></pre>
         </p>
         <p>
           <span>© <span data-year></span> Rahul Pal</span>
-          <span>Built for GitHub Pages from homepage/.</span>
+          <span>Local-first · Privacy-first · Open-source</span>
         </p>
       </footer>
     </div>

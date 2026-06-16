@@ -33,7 +33,11 @@ The homepage is designed to showcase TypeWise as a polished product page while k
 ## ✨ Features
 
 ### 🔤 Core Text Expansion
-- **Shortcut-based expansion**: Type a trigger key (default `/`) followed by your keyword to instantly expand text
+- **Flexible trigger configurations**: Choose custom prefix trigger keys like `;`, `/`, `:`, `!`, or go prefix-less to trigger expansions on exact shortcut match + Space or Tab
+- **Case-sensitivity controls**: Set case-sensitive matching rules per snippet, or keep them case-insensitive
+- **Auditory confirmation sounds**: Optional, local-only confirmation click sounds synthesized instantly using Web Audio API oscillators upon snippet expansion
+- **Custom expansion delays**: Specify delay timers (0s to 5s) before auto-expanding, giving users a chance to preview and cancel text replacements
+- **Extended editor support**: Expands in standard inputs, contenteditables, and elements carrying `role="textbox"` or `role="combobox"` (Notion, Slack, Jira, search fields)
 - **Dynamic variables**: Auto-replace placeholders like `{{date}}`, `{{time}}`, `{{datetime}}`, `{{year}}`, `{{month}}`, `{{day}}`, `{{timestamp}}`
 - **Usage tracking**: Automatic counter for each snippet to track how often they are used
 - **Categories & tags**: Organize snippets with categories and tags for easy management
@@ -139,6 +143,23 @@ Available variables:
 6. Optionally enable **Auto Backup**
 
 ✨ Security note: the extension uses a public GitHub OAuth client ID and device flow, so no client secret is stored in the repo or required in the extension.
+
+---
+
+## ⚙️ Configuration Properties
+
+The extension options dashboard lets you configure these settings, which are stored in the local schema configuration:
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `theme` | `'light'` \| `'dark'` \| `'system'` | `'system'` | Changes the color scheme of options pages, popups, and caret overlays. |
+| `triggerKey` | `string` | `'/'` | Prefix trigger key (`;`, `/`, `:`, `!`). An empty string `""` allows prefix-less expansions. |
+| `caseSensitive` | `boolean` | `false` | Distinguishes between uppercase and lowercase shortcut letters (e.g., `/btw` vs. `/BTW`). |
+| `expandDelay` | `number` | `0` | Delay in seconds (0s to 5s) before expanding templates, enabling cancel options. |
+| `playSounds` | `boolean` | `true` | Synthesizes a tactile confirmation click sound using local oscillators upon snippet expansion. |
+| `showNotifications` | `boolean` | `true` | Displays toast notifications in the tab when text is expanded. |
+| `syncEnabled` | `boolean` | `false` | Syncs encrypted databases to private GitHub Gists. |
+| `autoBackup` | `boolean` | `false` | Automatically backs up to connected Gist every 30 minutes. |
 
 ---
 

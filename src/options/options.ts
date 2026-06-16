@@ -1,19 +1,22 @@
 // src/options/options.ts
-import { Snippet, UserSettings } from '../types';
-import { storage } from '../utils/storage';
-import { gistManager } from '../api/gistManager';
+import { Snippet, UserSettings } from "../types";
+import { storage } from "../utils/storage";
+import { gistManager } from "../api/gistManager";
 
 class OptionsManager {
-  private currentTab = 'general';
+  private currentTab = "general";
   private snippets: Snippet[] = [];
   private settingsSaveTimer: number | null = null;
+  private triggerKey = "/";
+  private caseSensitive = false;
+  private soundVolume = 30;
 
   constructor() {
     void this.init();
   }
 
   async init() {
-    document.body.classList.add('dark');
+    document.body.classList.add("dark");
     this.attachEventListeners();
 
     try {
@@ -21,35 +24,80 @@ class OptionsManager {
       await this.loadSnippets();
       await this.updateGitHubStatus();
     } catch (error) {
-      console.error('Options initialization error:', error);
-      this.showToast('Recovered from a data error. Please review your snippets.', 'warning');
+      console.error("Options initialization error:", error);
+      this.showToast(
+        "Recovered from a data error. Please review your snippets.",
+        "warning",
+      );
     }
 
     this.checkWelcomeMode();
+    this.handleHashRoute();
+    window.addEventListener("hashchange", () => this.handleHashRoute());
   }
 
   async loadSettings() {
     const user = await storage.getUser();
     const settings = user.settings;
 
-    const triggerKeyEl = document.getElementById('triggerKey') as HTMLInputElement | null;
-    const expandDelayEl = document.getElementById('expandDelay') as HTMLInputElement | null;
-    const caseSensitiveEl = document.getElementById('caseSensitive') as HTMLInputElement | null;
-    const showNotificationsEl = document.getElementById('showNotifications') as HTMLInputElement | null;
-    const syncEnabledEl = document.getElementById('syncEnabled') as HTMLInputElement | null;
-    const autoBackupEl = document.getElementById('autoBackup') as HTMLInputElement | null;
+    this.triggerKey = settings.triggerKey || "/";
+    this.caseSensitive = Boolean(settings.caseSensitive);
+    this.soundVolume = settings.soundVolume ?? 30;
 
-    if (triggerKeyEl) triggerKeyEl.value = settings.triggerKey;
-    if (expandDelayEl) expandDelayEl.value = settings.expandDelay.toString();
+    const triggerKeyEl = document.getElementById(
+      "triggerKey",
+    ) as HTMLInputElement | null;
+    const expandDelayEl = document.getElementById(
+      "expandDelay",
+    ) as HTMLSelectElement | null;
+    const caseSensitiveEl = document.getElementById(
+      "caseSensitive",
+    ) as HTMLInputElement | null;
+    const showNotificationsEl = document.getElementById(
+      "showNotifications",
+    ) as HTMLInputElement | null;
+    const syncEnabledEl = document.getElementById(
+      "syncEnabled",
+    ) as HTMLInputElement | null;
+    const autoBackupEl = document.getElementById(
+      "autoBackup",
+    ) as HTMLInputElement | null;
+    const playSoundsEl = document.getElementById(
+      "playSounds",
+    ) as HTMLInputElement | null;
+
+    if (triggerKeyEl) {
+      triggerKeyEl.value = settings.triggerKey;
+      this.updateTriggerButtonsActive(settings.triggerKey);
+    }
+    if (expandDelayEl) {
+      expandDelayEl.value = settings.expandDelay.toString();
+    }
     if (caseSensitiveEl) caseSensitiveEl.checked = settings.caseSensitive;
-    if (showNotificationsEl) showNotificationsEl.checked = settings.showNotifications;
+    if (showNotificationsEl)
+      showNotificationsEl.checked = settings.showNotifications;
     if (syncEnabledEl) syncEnabledEl.checked = settings.syncEnabled;
     if (autoBackupEl) autoBackupEl.checked = settings.autoBackup;
+    if (playSoundsEl) playSoundsEl.checked = settings.playSounds !== false;
+
+    const soundVolumeEl = document.getElementById(
+      "soundVolume",
+    ) as HTMLInputElement | null;
+    const volumePercentageEl = document.getElementById(
+      "volumePercentage",
+    ) as HTMLElement | null;
+
+    if (soundVolumeEl) {
+      soundVolumeEl.value = (settings.soundVolume ?? 30).toString();
+    }
+    if (volumePercentageEl) {
+      volumePercentageEl.textContent = `${settings.soundVolume ?? 30}%`;
+    }
   }
 
   async loadSnippets() {
     try {
-      const result = await chrome.runtime.sendMessage({ type: 'GET_SNIPPETS' });
+      const result = await chrome.runtime.sendMessage({ type: "GET_SNIPPETS" });
       if (result?.success && Array.isArray(result.data)) {
         this.snippets = result.data;
       } else {
@@ -64,14 +112,14 @@ class OptionsManager {
   }
 
   attachEventListeners() {
-    document.querySelectorAll('.nav-item').forEach((item) => {
-      item.addEventListener('click', () => {
-        const tab = item.getAttribute('data-tab');
+    document.querySelectorAll(".nav-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        const tab = item.getAttribute("data-tab");
         if (tab) this.switchTab(tab);
       });
     });
 
-    document.getElementById('triggerKey')?.addEventListener('input', (e) => {
+    document.getElementById("triggerKey")?.addEventListener("input", (e) => {
       const input = e.target as HTMLInputElement;
       if (input.value.length > 1) {
         input.value = input.value.slice(0, 1);
@@ -79,105 +127,217 @@ class OptionsManager {
       this.scheduleSettingsSave();
     });
 
-    document.getElementById('expandDelay')?.addEventListener('input', () => {
+    document.querySelectorAll(".trigger-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const val = btn.getAttribute("data-val") || "";
+        const input = document.getElementById(
+          "triggerKey",
+        ) as HTMLInputElement | null;
+        if (input) {
+          input.value = val;
+          this.updateTriggerButtonsActive(val);
+          void this.saveSettings();
+        }
+      });
+    });
+
+    document.getElementById("expandDelay")?.addEventListener("change", () => {
+      void this.saveSettings();
+    });
+
+    document.getElementById("caseSensitive")?.addEventListener("change", () => {
+      void this.saveSettings();
+    });
+
+    document.getElementById("playSounds")?.addEventListener("change", () => {
+      void this.saveSettings();
+    });
+
+    document.getElementById("soundVolume")?.addEventListener("input", (e) => {
+      const volumeVal = parseInt((e.target as HTMLInputElement).value, 10);
+      const val = isNaN(volumeVal) ? 30 : volumeVal;
+      const volumePercentageEl = document.getElementById("volumePercentage");
+      if (volumePercentageEl) {
+        volumePercentageEl.textContent = `${val}%`;
+      }
+      this.soundVolume = val;
       this.scheduleSettingsSave();
     });
 
-    document.getElementById('caseSensitive')?.addEventListener('change', () => {
+    document.getElementById("testSoundBtn")?.addEventListener("click", () => {
+      const playSoundsEl = document.getElementById(
+        "playSounds",
+      ) as HTMLInputElement | null;
+      if (playSoundsEl && !playSoundsEl.checked) {
+        this.showToast(
+          "Sound is disabled in settings. Enable it to play the sound.",
+          "warning",
+        );
+        return;
+      }
+      this.playClickSound();
+    });
+
+    // Internal snippet expansion listener for Options page inputs/textareas
+    document.addEventListener("input", (e) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+        const input = target as HTMLInputElement | HTMLTextAreaElement;
+
+        // Don't expand inside the shortcut input itself to avoid infinite loops / weird behavior!
+        if (input.id === "snippetShortcut") {
+          return;
+        }
+
+        const value = input.value;
+        const cursorPos = input.selectionStart || 0;
+        const textBeforeCursor = value.substring(0, cursorPos);
+        const token = this.extractCurrentToken(textBeforeCursor);
+        if (!token) return;
+
+        const normalizedToken = this.normalizeMatchKey(token);
+        const snippet = this.snippets.find((s) => {
+          if (!s.isActive || !s.shortcut) return false;
+          const key = this.normalizeMatchKey(
+            this.buildTriggerString(s.shortcut),
+          );
+          return key === normalizedToken;
+        });
+
+        if (snippet) {
+          const playSoundsEl = document.getElementById(
+            "playSounds",
+          ) as HTMLInputElement | null;
+          if (playSoundsEl && playSoundsEl.checked) {
+            this.playClickSound();
+          }
+          void this.expandSnippetInElement(input, snippet, token);
+        }
+      }
+    });
+
+    document
+      .getElementById("showNotifications")
+      ?.addEventListener("change", () => {
+        void this.saveSettings();
+      });
+
+    document.getElementById("syncEnabled")?.addEventListener("change", () => {
       void this.saveSettings();
     });
 
-    document.getElementById('showNotifications')?.addEventListener('change', () => {
+    document.getElementById("autoBackup")?.addEventListener("change", () => {
       void this.saveSettings();
     });
 
-    document.getElementById('syncEnabled')?.addEventListener('change', () => {
-      void this.saveSettings();
-    });
-
-    document.getElementById('autoBackup')?.addEventListener('change', () => {
-      void this.saveSettings();
-    });
-
-    document.getElementById('addSnippetBtn')?.addEventListener('click', () => this.openSnippetModal());
-    document.getElementById('heroCreateSnippetBtn')?.addEventListener('click', () => {
-      this.switchTab('snippets');
-      this.openSnippetModal();
-    });
-    document.getElementById('heroSyncBtn')?.addEventListener('click', () => {
+    document
+      .getElementById("addSnippetBtn")
+      ?.addEventListener("click", () => this.openSnippetModal());
+    document
+      .getElementById("heroCreateSnippetBtn")
+      ?.addEventListener("click", () => {
+        this.switchTab("snippets");
+        this.openSnippetModal();
+      });
+    document.getElementById("heroSyncBtn")?.addEventListener("click", () => {
       void this.syncNow();
     });
-    document.getElementById('importSnippetsBtn')?.addEventListener('click', () => {
-      void this.importSnippets();
-    });
-    document.getElementById('exportSnippetsBtn')?.addEventListener('click', () => {
-      void this.exportSnippets();
-    });
+    document
+      .getElementById("importSnippetsBtn")
+      ?.addEventListener("click", () => {
+        void this.importSnippets();
+      });
+    document
+      .getElementById("exportSnippetsBtn")
+      ?.addEventListener("click", () => {
+        void this.exportSnippets();
+      });
 
-    document.getElementById('snippetSearch')?.addEventListener('input', (e) => {
+    document.getElementById("snippetSearch")?.addEventListener("input", (e) => {
       this.renderSnippets((e.target as HTMLInputElement).value);
     });
 
-    document.getElementById('closeModalBtn')?.addEventListener('click', () => this.closeSnippetModal());
-    document.getElementById('cancelSnippetBtn')?.addEventListener('click', () => this.closeSnippetModal());
-    document.getElementById('saveSnippetBtn')?.addEventListener('click', () => {
+    document
+      .getElementById("closeModalBtn")
+      ?.addEventListener("click", () => this.closeSnippetModal());
+    document
+      .getElementById("cancelSnippetBtn")
+      ?.addEventListener("click", () => this.closeSnippetModal());
+    document.getElementById("saveSnippetBtn")?.addEventListener("click", () => {
       void this.saveSnippetForm();
     });
 
-    document.getElementById('snippetForm')?.addEventListener('submit', (e) => {
+    document.getElementById("snippetForm")?.addEventListener("submit", (e) => {
       e.preventDefault();
       void this.saveSnippetForm();
     });
 
-    document.getElementById('snippetModal')?.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).id === 'snippetModal') {
+    document.getElementById("snippetModal")?.addEventListener("click", (e) => {
+      if ((e.target as HTMLElement).id === "snippetModal") {
         this.closeSnippetModal();
       }
     });
 
-    document.getElementById('snippetsList')?.addEventListener('click', (e) => {
+    document.getElementById("snippetsList")?.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
-      const button = target.closest('button');
+      const button = target.closest("button");
       if (!button) return;
 
       const id = button.dataset.id;
       if (!id) return;
 
-      if (button.classList.contains('edit-btn')) {
+      if (button.classList.contains("edit-btn")) {
         this.editSnippet(id);
-      } else if (button.classList.contains('delete-btn')) {
+      } else if (button.classList.contains("delete-btn")) {
         void this.deleteSnippet(id);
       }
     });
 
-    document.getElementById('connectGithubBtn')?.addEventListener('click', () => {
-      void this.connectOrDisconnectGitHub();
-    });
-    document.getElementById('syncNowBtn')?.addEventListener('click', () => {
+    document
+      .getElementById("connectGithubBtn")
+      ?.addEventListener("click", () => {
+        void this.connectOrDisconnectGitHub();
+      });
+    document.getElementById("syncNowBtn")?.addEventListener("click", () => {
       void this.syncNow();
     });
-    document.getElementById('pullFromGistBtn')?.addEventListener('click', () => {
-      void this.pullFromGist();
+    document
+      .getElementById("pullFromGistBtn")
+      ?.addEventListener("click", () => {
+        void this.pullFromGist();
+      });
+
+    document.getElementById("reportBugLink")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.open(
+        "https://github.com/GoldLion123RP/typewise-extension/issues/new?labels=bug",
+        "_blank",
+        "noopener,noreferrer",
+      );
     });
 
-    document.getElementById('reportBugLink')?.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.open('https://github.com/GoldLion123RP/typewise-extension/issues/new?labels=bug', '_blank', 'noopener,noreferrer');
-    });
-
-    document.getElementById('requestFeatureLink')?.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.open('https://github.com/GoldLion123RP/typewise-extension/issues/new?labels=enhancement', '_blank', 'noopener,noreferrer');
-    });
+    document
+      .getElementById("requestFeatureLink")
+      ?.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.open(
+          "https://github.com/GoldLion123RP/typewise-extension/issues/new?labels=enhancement",
+          "_blank",
+          "noopener,noreferrer",
+        );
+      });
   }
 
   switchTab(tabName: string) {
-    document.querySelectorAll('.nav-item').forEach((item) => {
-      item.classList.toggle('active', item.getAttribute('data-tab') === tabName);
+    document.querySelectorAll(".nav-item").forEach((item) => {
+      item.classList.toggle(
+        "active",
+        item.getAttribute("data-tab") === tabName,
+      );
     });
 
-    document.querySelectorAll('.tab-pane').forEach((pane) => {
-      pane.classList.toggle('active', pane.id === `${tabName}-tab`);
+    document.querySelectorAll(".tab-pane").forEach((pane) => {
+      pane.classList.toggle("active", pane.id === `${tabName}-tab`);
     });
 
     this.currentTab = tabName;
@@ -189,24 +349,58 @@ class OptionsManager {
       this.settingsSaveTimer = null;
     }
 
-    const triggerKeyRaw = (document.getElementById('triggerKey') as HTMLInputElement | null)?.value.trim() || '/';
-    const triggerKey = triggerKeyRaw[0] || '/';
+    const triggerKeyEl = document.getElementById(
+      "triggerKey",
+    ) as HTMLInputElement | null;
+    const triggerKey = triggerKeyEl !== null ? triggerKeyEl.value : "/";
+
+    const parsedVolume = parseInt(
+      (document.getElementById("soundVolume") as HTMLInputElement | null)
+        ?.value || "30",
+      10,
+    );
+    const volumeVal = isNaN(parsedVolume) ? 30 : parsedVolume;
 
     const settings: UserSettings = {
-      theme: 'dark',
+      theme: "dark",
       triggerKey,
-      expandDelay: parseInt((document.getElementById('expandDelay') as HTMLInputElement | null)?.value || '0', 10) || 0,
-      caseSensitive: (document.getElementById('caseSensitive') as HTMLInputElement | null)?.checked || false,
+      expandDelay:
+        parseInt(
+          (document.getElementById("expandDelay") as HTMLSelectElement | null)
+            ?.value || "0",
+          10,
+        ) || 0,
+      caseSensitive:
+        (document.getElementById("caseSensitive") as HTMLInputElement | null)
+          ?.checked || false,
       showNotifications:
-        (document.getElementById('showNotifications') as HTMLInputElement | null)?.checked || false,
-      syncEnabled: (document.getElementById('syncEnabled') as HTMLInputElement | null)?.checked || false,
-      autoBackup: (document.getElementById('autoBackup') as HTMLInputElement | null)?.checked || false,
+        (
+          document.getElementById(
+            "showNotifications",
+          ) as HTMLInputElement | null
+        )?.checked || false,
+      syncEnabled:
+        (document.getElementById("syncEnabled") as HTMLInputElement | null)
+          ?.checked || false,
+      autoBackup:
+        (document.getElementById("autoBackup") as HTMLInputElement | null)
+          ?.checked || false,
+      playSounds:
+        (document.getElementById("playSounds") as HTMLInputElement | null)
+          ?.checked !== false,
+      soundVolume: volumeVal,
     };
 
+    this.triggerKey = triggerKey;
+    this.caseSensitive = settings.caseSensitive;
+    this.soundVolume = volumeVal;
+
     await storage.updateSettings(settings);
-    chrome.runtime.sendMessage({ type: 'UPDATE_SETTINGS', settings }).catch(() => undefined);
+    chrome.runtime
+      .sendMessage({ type: "UPDATE_SETTINGS", settings })
+      .catch(() => undefined);
     if (showToast) {
-      this.showToast('Settings saved successfully', 'success');
+      this.showToast("Settings saved successfully", "success");
     }
   }
 
@@ -220,16 +414,16 @@ class OptionsManager {
     }, 180);
   }
 
-  renderSnippets(searchTerm = '') {
-    const container = document.getElementById('snippetsList');
+  renderSnippets(searchTerm = "") {
+    const container = document.getElementById("snippetsList");
     if (!container) return;
 
     const term = searchTerm.trim().toLowerCase();
     const filtered = this.snippets.filter(
       (snippet) =>
-        (snippet.title || '').toLowerCase().includes(term) ||
-        (snippet.shortcut || '').toLowerCase().includes(term) ||
-        (snippet.content || '').toLowerCase().includes(term),
+        (snippet.title || "").toLowerCase().includes(term) ||
+        (snippet.shortcut || "").toLowerCase().includes(term) ||
+        (snippet.content || "").toLowerCase().includes(term),
     );
 
     // Clear existing content
@@ -238,41 +432,43 @@ class OptionsManager {
     }
 
     if (filtered.length === 0) {
-      const emptyState = document.createElement('div');
-      emptyState.className = 'empty-state';
-      emptyState.textContent = 'No snippets found';
+      const emptyState = document.createElement("div");
+      emptyState.className = "empty-state";
+      emptyState.textContent = "No snippets found";
       container.appendChild(emptyState);
       return;
     }
 
     filtered.forEach((snippet) => {
-      const card = document.createElement('div');
-      card.className = 'snippet-card';
+      const card = document.createElement("div");
+      card.className = "snippet-card";
 
-      const titleContainer = document.createElement('h4');
-      const titleText = document.createTextNode(this.escapeHtml(snippet.title || 'Untitled'));
-      const shortcutSpan = document.createElement('span');
-      shortcutSpan.className = 'snippet-shortcut';
-      shortcutSpan.textContent = this.escapeHtml(snippet.shortcut || '');
+      const titleContainer = document.createElement("h4");
+      const titleText = document.createTextNode(
+        this.escapeHtml(snippet.title || "Untitled"),
+      );
+      const shortcutSpan = document.createElement("span");
+      shortcutSpan.className = "snippet-shortcut";
+      shortcutSpan.textContent = this.escapeHtml(snippet.shortcut || "");
       titleContainer.appendChild(titleText);
       titleContainer.appendChild(shortcutSpan);
 
-      const contentPreview = document.createElement('div');
-      contentPreview.className = 'snippet-content-preview';
-      contentPreview.textContent = this.escapeHtml(snippet.content || '');
+      const contentPreview = document.createElement("div");
+      contentPreview.className = "snippet-content-preview";
+      contentPreview.textContent = this.escapeHtml(snippet.content || "");
 
-      const actionsDiv = document.createElement('div');
-      actionsDiv.className = 'snippet-actions';
+      const actionsDiv = document.createElement("div");
+      actionsDiv.className = "snippet-actions";
 
-      const editBtn = document.createElement('button');
-      editBtn.className = 'snippet-action-btn edit-btn';
-      editBtn.setAttribute('data-id', snippet.id);
-      editBtn.textContent = 'Edit';
+      const editBtn = document.createElement("button");
+      editBtn.className = "snippet-action-btn edit-btn";
+      editBtn.setAttribute("data-id", snippet.id);
+      editBtn.textContent = "Edit";
 
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'snippet-action-btn delete-btn delete';
-      deleteBtn.setAttribute('data-id', snippet.id);
-      deleteBtn.textContent = 'Delete';
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "snippet-action-btn delete-btn delete";
+      deleteBtn.setAttribute("data-id", snippet.id);
+      deleteBtn.textContent = "Delete";
 
       actionsDiv.appendChild(editBtn);
       actionsDiv.appendChild(deleteBtn);
@@ -286,57 +482,80 @@ class OptionsManager {
   }
 
   openSnippetModal(snippetId?: string) {
-    const modal = document.getElementById('snippetModal');
-    const form = document.getElementById('snippetForm') as HTMLFormElement | null;
-    const modalTitle = document.getElementById('modalTitle');
+    const modal = document.getElementById("snippetModal");
+    const form = document.getElementById(
+      "snippetForm",
+    ) as HTMLFormElement | null;
+    const modalTitle = document.getElementById("modalTitle");
 
     if (!modal || !form || !modalTitle) return;
 
     form.reset();
 
-    const idEl = document.getElementById('snippetId') as HTMLInputElement | null;
-    const titleEl = document.getElementById('snippetTitle') as HTMLInputElement | null;
-    const shortcutEl = document.getElementById('snippetShortcut') as HTMLInputElement | null;
-    const contentEl = document.getElementById('snippetContent') as HTMLTextAreaElement | null;
-    const tagsEl = document.getElementById('snippetTags') as HTMLInputElement | null;
+    const idEl = document.getElementById(
+      "snippetId",
+    ) as HTMLInputElement | null;
+    const titleEl = document.getElementById(
+      "snippetTitle",
+    ) as HTMLInputElement | null;
+    const shortcutEl = document.getElementById(
+      "snippetShortcut",
+    ) as HTMLInputElement | null;
+    const contentEl = document.getElementById(
+      "snippetContent",
+    ) as HTMLTextAreaElement | null;
+    const tagsEl = document.getElementById(
+      "snippetTags",
+    ) as HTMLInputElement | null;
 
-    if (idEl) idEl.value = '';
+    if (idEl) idEl.value = "";
 
     if (snippetId) {
       const snippet = this.snippets.find((s) => s.id === snippetId);
       if (snippet) {
-        modalTitle.textContent = 'Edit Snippet';
+        modalTitle.textContent = "Edit Snippet";
         if (idEl) idEl.value = snippet.id;
         if (titleEl) titleEl.value = snippet.title;
         if (shortcutEl) shortcutEl.value = snippet.shortcut;
         if (contentEl) contentEl.value = snippet.content;
-        if (tagsEl) tagsEl.value = (snippet.tags || []).join(', ');
+        if (tagsEl) tagsEl.value = (snippet.tags || []).join(", ");
       }
     } else {
-      modalTitle.textContent = 'Add Snippet';
+      modalTitle.textContent = "Add Snippet";
     }
 
-    modal.classList.remove('hidden');
-    modal.classList.add('active');
+    modal.classList.remove("hidden");
+    modal.classList.add("active");
   }
 
   closeSnippetModal() {
-    const modal = document.getElementById('snippetModal');
-    modal?.classList.remove('active');
-    modal?.classList.add('hidden');
+    const modal = document.getElementById("snippetModal");
+    modal?.classList.remove("active");
+    modal?.classList.add("hidden");
   }
 
   async saveSnippetForm() {
-    const id = (document.getElementById('snippetId') as HTMLInputElement | null)?.value || '';
-    const title = (document.getElementById('snippetTitle') as HTMLInputElement | null)?.value.trim() || '';
+    const id =
+      (document.getElementById("snippetId") as HTMLInputElement | null)
+        ?.value || "";
+    const title =
+      (
+        document.getElementById("snippetTitle") as HTMLInputElement | null
+      )?.value.trim() || "";
     const shortcut =
-      (document.getElementById('snippetShortcut') as HTMLInputElement | null)?.value.trim() || '';
+      (
+        document.getElementById("snippetShortcut") as HTMLInputElement | null
+      )?.value.trim() || "";
     const content =
-      (document.getElementById('snippetContent') as HTMLTextAreaElement | null)?.value.trim() || '';
-    const tagsStr = (document.getElementById('snippetTags') as HTMLInputElement | null)?.value || '';
+      (
+        document.getElementById("snippetContent") as HTMLTextAreaElement | null
+      )?.value.trim() || "";
+    const tagsStr =
+      (document.getElementById("snippetTags") as HTMLInputElement | null)
+        ?.value || "";
 
     if (!title || !shortcut || !content) {
-      this.showToast('Please fill in all required fields', 'error');
+      this.showToast("Please fill in all required fields", "error");
       return;
     }
 
@@ -347,37 +566,43 @@ class OptionsManager {
       shortcut,
       content,
       tags: tagsStr
-        .split(',')
+        .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean),
       usageCount: existing?.usageCount || 0,
       createdAt: existing?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isActive: true,
-      category: existing?.category || 'General',
+      category: existing?.category || "General",
     };
 
     try {
-      const result = await chrome.runtime.sendMessage({ type: 'SAVE_SNIPPET', snippet });
+      const result = await chrome.runtime.sendMessage({
+        type: "SAVE_SNIPPET",
+        snippet,
+      });
 
       if (!result?.success) {
-        throw new Error(result?.error || 'Failed to save snippet');
+        throw new Error(result?.error || "Failed to save snippet");
       }
 
       await this.loadSnippets();
       this.closeSnippetModal();
-      this.showToast('Snippet saved successfully', 'success');
+      this.showToast("Snippet saved successfully", "success");
     } catch (_error) {
       // Fallback to local write if background message is temporarily unavailable.
       try {
         await storage.saveSnippet(snippet);
         await this.loadSnippets();
         this.closeSnippetModal();
-        this.showToast('Snippet saved successfully', 'success');
+        this.showToast("Snippet saved successfully", "success");
       } catch (_fallbackError) {
-        console.error('Options save snippet error:', _fallbackError);
-        const message = _fallbackError instanceof Error ? _fallbackError.message : 'Failed to save snippet. Please try again.';
-        this.showToast(message, 'error');
+        console.error("Options save snippet error:", _fallbackError);
+        const message =
+          _fallbackError instanceof Error
+            ? _fallbackError.message
+            : "Failed to save snippet. Please try again.";
+        this.showToast(message, "error");
       }
     }
   }
@@ -387,18 +612,20 @@ class OptionsManager {
   }
 
   async deleteSnippet(id: string) {
-    if (!confirm('Are you sure you want to delete this snippet?')) return;
+    if (!confirm("Are you sure you want to delete this snippet?")) return;
 
     await storage.deleteSnippet(id);
     await this.loadSnippets();
-    this.showToast('Snippet deleted', 'success');
-    chrome.runtime.sendMessage({ type: 'DELETE_SNIPPET', id }).catch(() => undefined);
+    this.showToast("Snippet deleted", "success");
+    chrome.runtime
+      .sendMessage({ type: "DELETE_SNIPPET", id })
+      .catch(() => undefined);
   }
 
   async importSnippets() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
 
     input.onchange = async (event) => {
       const file = (event.target as HTMLInputElement).files?.[0];
@@ -408,19 +635,19 @@ class OptionsManager {
         const text = await file.text();
         const data = JSON.parse(text);
         if (!Array.isArray(data)) {
-          throw new Error('Invalid JSON');
+          throw new Error("Invalid JSON");
         }
 
         for (const item of data) {
-          if (item && typeof item === 'object') {
+          if (item && typeof item === "object") {
             await storage.saveSnippet(item as Snippet);
           }
         }
 
         await this.loadSnippets();
-        this.showToast('Snippets imported successfully', 'success');
+        this.showToast("Snippets imported successfully", "success");
       } catch {
-        this.showToast('Invalid import file', 'error');
+        this.showToast("Invalid import file", "error");
       }
     };
 
@@ -429,11 +656,11 @@ class OptionsManager {
 
   async exportSnippets() {
     const data = JSON.stringify(this.snippets, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
+    const blob = new Blob([data], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `typewise-snippets-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `typewise-snippets-${new Date().toISOString().split("T")[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -442,9 +669,13 @@ class OptionsManager {
     const user = await storage.getUser();
 
     if (user.githubToken) {
-      await storage.updateUser({ githubToken: undefined, gistId: undefined, githubUsername: undefined });
+      await storage.updateUser({
+        githubToken: undefined,
+        gistId: undefined,
+        githubUsername: undefined,
+      });
       await this.updateGitHubStatus();
-      this.showToast('Disconnected from GitHub', 'success');
+      this.showToast("Disconnected from GitHub", "success");
       return;
     }
 
@@ -453,20 +684,21 @@ class OptionsManager {
       const githubUsername = await gistManager.fetchGitHubUsername(token);
       await storage.updateUser({ githubToken: token, githubUsername });
       await this.updateGitHubStatus();
-      this.showToast('Connected to GitHub successfully', 'success');
+      this.showToast("Connected to GitHub successfully", "success");
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to connect to GitHub';
-      this.showToast(message, 'error');
+      const message =
+        error instanceof Error ? error.message : "Failed to connect to GitHub";
+      this.showToast(message, "error");
     }
   }
 
   async syncNow() {
     try {
       await gistManager.syncWithGist();
-      this.showToast('Synced with GitHub', 'success');
+      this.showToast("Synced with GitHub", "success");
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Sync failed';
-      this.showToast(`Sync failed: ${message}`, 'error');
+      const message = error instanceof Error ? error.message : "Sync failed";
+      this.showToast(`Sync failed: ${message}`, "error");
     }
   }
 
@@ -474,128 +706,292 @@ class OptionsManager {
     try {
       await gistManager.pullFromGist();
       await this.loadSnippets();
-      this.showToast('Pulled snippets from Gist', 'success');
+      this.showToast("Pulled snippets from Gist", "success");
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Pull failed';
-      this.showToast(`Pull failed: ${message}`, 'error');
+      const message = error instanceof Error ? error.message : "Pull failed";
+      this.showToast(`Pull failed: ${message}`, "error");
     }
   }
 
   async updateGitHubStatus() {
     const user = await storage.getUser();
-    const statusDiv = document.getElementById('githubStatus');
-    const connectBtn = document.getElementById('connectGithubBtn') as HTMLButtonElement | null;
+    const statusDiv = document.getElementById("githubStatus");
+    const connectBtn = document.getElementById(
+      "connectGithubBtn",
+    ) as HTMLButtonElement | null;
 
     if (!statusDiv) return;
 
     // Clear existing content
-    statusDiv.textContent = '';
+    statusDiv.textContent = "";
 
     if (user.githubToken) {
-      statusDiv.className = 'github-status connected';
+      statusDiv.className = "github-status connected";
 
       // Create and append elements
-      const strong = document.createElement('strong');
-      strong.textContent = 'Connected to GitHub';
+      const strong = document.createElement("strong");
+      strong.textContent = "Connected to GitHub";
       statusDiv.appendChild(strong);
 
-      const usernameP = document.createElement('p');
-      usernameP.textContent = `Username: ${this.escapeHtml(user.githubUsername || 'Unknown')}`;
+      const usernameP = document.createElement("p");
+      usernameP.textContent = `Username: ${this.escapeHtml(user.githubUsername || "Unknown")}`;
       statusDiv.appendChild(usernameP);
 
       if (user.gistId) {
-        const gistP = document.createElement('p');
+        const gistP = document.createElement("p");
         gistP.textContent = `Gist ID: ${this.escapeHtml(user.gistId)}`;
         statusDiv.appendChild(gistP);
       }
 
       if (connectBtn) {
-        connectBtn.textContent = 'Disconnect GitHub';
-        connectBtn.classList.remove('btn-primary');
-        connectBtn.classList.add('btn-danger');
+        connectBtn.textContent = "Disconnect GitHub";
+        connectBtn.classList.remove("btn-primary");
+        connectBtn.classList.add("btn-danger");
       }
     } else {
-      statusDiv.className = 'github-status';
+      statusDiv.className = "github-status";
 
       // Create and append elements
-      const strong = document.createElement('strong');
-      strong.textContent = 'Not connected to GitHub';
+      const strong = document.createElement("strong");
+      strong.textContent = "Not connected to GitHub";
       statusDiv.appendChild(strong);
 
-      const p = document.createElement('p');
-      p.textContent = 'Connect to sync your snippets across devices.';
+      const p = document.createElement("p");
+      p.textContent = "Connect to sync your snippets across devices.";
       statusDiv.appendChild(p);
 
       if (connectBtn) {
-        connectBtn.textContent = 'Connect GitHub Account';
-        connectBtn.classList.add('btn-primary');
-        connectBtn.classList.remove('btn-danger');
+        connectBtn.textContent = "Connect GitHub Account";
+        connectBtn.classList.add("btn-primary");
+        connectBtn.classList.remove("btn-danger");
       }
     }
   }
 
   async updateStats() {
     const totalSnippets = this.snippets.length;
-    const totalExpansions = this.snippets.reduce((sum, snippet) => sum + snippet.usageCount, 0);
-    const activeSnippets = this.snippets.filter((snippet) => snippet.isActive).length;
+    const totalExpansions = this.snippets.reduce(
+      (sum, snippet) => sum + snippet.usageCount,
+      0,
+    );
+    const activeSnippets = this.snippets.filter(
+      (snippet) => snippet.isActive,
+    ).length;
 
-    const totalEl = document.getElementById('totalSnippetsCount');
-    const expansionsEl = document.getElementById('totalExpansions');
-    const heroTotalEl = document.getElementById('heroSnippetCount');
-    const heroActiveEl = document.getElementById('heroActiveCount');
-    const heroExpansionEl = document.getElementById('heroExpansionCount');
+    const totalEl = document.getElementById("totalSnippetsCount");
+    const expansionsEl = document.getElementById("totalExpansions");
+    const heroTotalEl = document.getElementById("heroSnippetCount");
+    const heroActiveEl = document.getElementById("heroActiveCount");
+    const heroExpansionEl = document.getElementById("heroExpansionCount");
 
     if (totalEl) totalEl.textContent = totalSnippets.toString();
     if (expansionsEl) expansionsEl.textContent = totalExpansions.toString();
     if (heroTotalEl) heroTotalEl.textContent = totalSnippets.toString();
     if (heroActiveEl) heroActiveEl.textContent = activeSnippets.toString();
-    if (heroExpansionEl) heroExpansionEl.textContent = totalExpansions.toString();
+    if (heroExpansionEl)
+      heroExpansionEl.textContent = totalExpansions.toString();
   }
 
   checkWelcomeMode() {
     const params = new URLSearchParams(window.location.search);
 
-    if (params.get('welcome') === 'true') {
-      this.showToast('Welcome to TypeWise!', 'success');
-      this.switchTab('general');
+    if (params.get("welcome") === "true") {
+      this.showToast("Welcome to TypeWise!", "success");
+      this.switchTab("general");
     }
 
-    if (params.get('new') === 'true') {
-      const content = params.get('content');
+    if (params.get("new") === "true") {
+      const content = params.get("content");
       if (content) {
         this.openSnippetModal();
-        const contentInput = document.getElementById('snippetContent') as HTMLTextAreaElement | null;
+        const contentInput = document.getElementById(
+          "snippetContent",
+        ) as HTMLTextAreaElement | null;
         if (contentInput) contentInput.value = content;
       }
     }
   }
 
-  showToast(message: string, type: 'success' | 'error' | 'warning' = 'success') {
-    const toast = document.createElement('div');
+  showToast(
+    message: string,
+    type: "success" | "error" | "warning" = "success",
+  ) {
+    const toast = document.createElement("div");
     toast.className = `toast ${type}`;
     toast.textContent = message;
     document.body.appendChild(toast);
 
     setTimeout(() => {
-      toast.style.animation = 'slideOut 0.3s ease';
+      toast.style.animation = "slideOut 0.3s ease";
       setTimeout(() => toast.remove(), 300);
     }, 3000);
   }
 
   escapeHtml(text: string): string {
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
   }
 
   generateSnippetId(): string {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    if (
+      typeof crypto !== "undefined" &&
+      typeof crypto.randomUUID === "function"
+    ) {
       return crypto.randomUUID();
     }
     return `snippet-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   }
+
+  updateTriggerButtonsActive(val: string) {
+    document.querySelectorAll(".trigger-btn").forEach((btn) => {
+      const btnVal = btn.getAttribute("data-val") || "";
+      if (btnVal === val) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+  }
+
+  handleHashRoute() {
+    const hash = window.location.hash;
+    if (hash === "#snippets" || hash === "#add") {
+      this.switchTab("snippets");
+      if (hash === "#add") {
+        setTimeout(() => this.openSnippetModal(), 100);
+      }
+    } else if (hash.startsWith("#edit-")) {
+      const id = hash.replace("#edit-", "");
+      this.switchTab("snippets");
+      setTimeout(() => this.openSnippetModal(id), 100);
+    }
+  }
+
+  private buildTriggerString(shortcut: string): string {
+    const normalized = shortcut.trim();
+    if (!this.triggerKey) {
+      return normalized;
+    }
+    return normalized.startsWith(this.triggerKey)
+      ? normalized
+      : `${this.triggerKey}${normalized}`;
+  }
+
+  private normalizeMatchKey(value: string): string {
+    return this.caseSensitive ? value : value.toLowerCase();
+  }
+
+  private extractCurrentToken(textBeforeCursor: string): string {
+    const tokenMatch = textBeforeCursor.match(/(?:^|\s)(\S+)$/);
+    return tokenMatch?.[1] || "";
+  }
+
+  async expandSnippetInElement(
+    input: HTMLInputElement | HTMLTextAreaElement,
+    snippet: Snippet,
+    typedToken: string,
+  ) {
+    const value = input.value;
+    const cursorPos = input.selectionStart || 0;
+    const selectionEnd = input.selectionEnd || 0;
+    const beforePos = cursorPos - typedToken.length;
+    const before = value.substring(0, beforePos);
+    const after = value.substring(selectionEnd);
+
+    const now = new Date();
+    const variables: { [key: string]: string } = {
+      "{{date}}": now.toLocaleDateString(),
+      "{{time}}": now.toLocaleTimeString(),
+      "{{datetime}}": now.toLocaleString(),
+      "{{year}}": now.getFullYear().toString(),
+      "{{month}}": (now.getMonth() + 1).toString().padStart(2, "0"),
+      "{{day}}": now.getDate().toString().padStart(2, "0"),
+      "{{timestamp}}": now.getTime().toString(),
+      "{{clipboard}}": "",
+    };
+
+    let clipboardContent = "";
+    if (snippet.content.includes("{{clipboard}}")) {
+      try {
+        clipboardContent = await navigator.clipboard.readText();
+      } catch {
+        // ignore
+      }
+    }
+    variables["{{clipboard}}"] = clipboardContent;
+
+    let finalContent = snippet.content;
+    for (const [key, val] of Object.entries(variables)) {
+      finalContent = finalContent.replace(
+        new RegExp(this.escapeRegExp(key), "g"),
+        val,
+      );
+    }
+
+    const cursorPlaceholder = "{{cursor}}";
+    const caretPlaceholder = "{{caret}}";
+    let cursorOffset = -1;
+    let cleanContent = finalContent;
+
+    const placeholderIdx = finalContent.indexOf(cursorPlaceholder);
+    if (placeholderIdx !== -1) {
+      cursorOffset = placeholderIdx;
+      cleanContent =
+        finalContent.substring(0, placeholderIdx) +
+        finalContent.substring(placeholderIdx + cursorPlaceholder.length);
+    } else {
+      const caretIdx = finalContent.indexOf(caretPlaceholder);
+      if (caretIdx !== -1) {
+        cursorOffset = caretIdx;
+        cleanContent =
+          finalContent.substring(0, caretIdx) +
+          finalContent.substring(caretIdx + caretPlaceholder.length);
+      }
+    }
+
+    input.value = before + cleanContent + after;
+    const newCursorPos =
+      before.length +
+      (cursorOffset !== -1 ? cursorOffset : cleanContent.length);
+    input.setSelectionRange(newCursorPos, newCursorPos);
+
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  private escapeRegExp(string: string): string {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  playClickSound() {
+    try {
+      const AudioContextClass =
+        window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(800, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
+
+      const volumePercent = this.soundVolume / 100;
+      gain.gain.setValueAtTime(volumePercent, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.05);
+    } catch (error) {
+      console.error("Failed to play synthesized sound:", error);
+    }
+  }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   new OptionsManager();
 });

@@ -67,6 +67,11 @@ module.exports = {
           to: 'assets',
           noErrorOnMissing: true
         },
+        { 
+          from: 'homepage',
+          to: 'homepage',
+          noErrorOnMissing: true
+        },
         {
           from: 'src/styles/common.css',
           to: 'styles/common.css',
@@ -96,7 +101,7 @@ module.exports = {
       chunks: ['options'],
       inject: 'body'
     }),
-new LodashPlugin({
+    new LodashPlugin({
       lodashTemplate: false
     })
   ],

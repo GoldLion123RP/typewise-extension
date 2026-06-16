@@ -22,13 +22,15 @@ export interface User {
 }
 
 export interface UserSettings {
-  theme: 'light' | 'dark' | 'system';
+  theme: "light" | "dark" | "system";
   triggerKey: string;
   caseSensitive: boolean;
   showNotifications: boolean;
   syncEnabled: boolean;
   autoBackup: boolean;
   expandDelay: number;
+  playSounds: boolean;
+  soundVolume?: number;
 }
 
 export interface StorageData {

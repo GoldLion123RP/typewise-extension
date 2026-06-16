@@ -28,10 +28,13 @@
 
   --shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.28);
   --shadow-lift: 0 20px 40px rgba(0, 0, 0, 0.35);
-  --rim-blue: 0 0 0 1px rgba(0, 112, 243, 0.55), 0 0 24px rgba(0, 112, 243, 0.2);
-  --rim-teal: 0 0 0 1px rgba(20, 255, 236, 0.45), 0 0 20px rgba(20, 255, 236, 0.18);
+  --rim-blue:
+    0 0 0 1px rgba(0, 112, 243, 0.55), 0 0 24px rgba(0, 112, 243, 0.2);
+  --rim-teal:
+    0 0 0 1px rgba(20, 255, 236, 0.45), 0 0 20px rgba(20, 255, 236, 0.18);
 
-  --font-family: 'Inter', 'Geist', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --font-family:
+    "Inter", "Geist", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
 
 body.dark {
@@ -53,8 +56,16 @@ body {
   font-family: var(--font-family);
   color: var(--text-primary);
   background:
-    radial-gradient(circle at 85% -5%, rgba(0, 112, 243, 0.16), transparent 42%),
-    radial-gradient(circle at 20% 120%, rgba(20, 255, 236, 0.12), transparent 45%),
+    radial-gradient(
+      circle at 85% -5%,
+      rgba(0, 112, 243, 0.16),
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at 20% 120%,
+      rgba(20, 255, 236, 0.12),
+      transparent 45%
+    ),
     linear-gradient(155deg, #090a0d 0%, #0d0f13 48%, #101217 100%);
 }
 
@@ -82,7 +93,11 @@ body {
   font-weight: 600;
   letter-spacing: 0.01em;
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    background 0.2s ease;
 }
 
 .btn:hover {
@@ -96,13 +111,21 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(180deg, rgba(0, 112, 243, 0.94), rgba(0, 87, 187, 0.96));
+  background: linear-gradient(
+    180deg,
+    rgba(0, 112, 243, 0.94),
+    rgba(0, 87, 187, 0.96)
+  );
   border-color: rgba(0, 112, 243, 0.75);
   color: #ffffff;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(180deg, rgba(18, 130, 255, 0.96), rgba(0, 99, 214, 0.98));
+  background: linear-gradient(
+    180deg,
+    rgba(18, 130, 255, 0.96),
+    rgba(0, 99, 214, 0.98)
+  );
 }
 
 .btn-secondary {
@@ -117,7 +140,11 @@ body {
 }
 
 .btn-teal {
-  background: linear-gradient(180deg, rgba(20, 255, 236, 0.18), rgba(20, 255, 236, 0.08));
+  background: linear-gradient(
+    180deg,
+    rgba(20, 255, 236, 0.18),
+    rgba(20, 255, 236, 0.08)
+  );
   border-color: rgba(20, 255, 236, 0.55);
   color: #b9fff8;
 }
@@ -135,7 +162,9 @@ body {
 
 .btn-danger:hover {
   border-color: rgba(255, 95, 122, 0.75);
-  box-shadow: 0 0 0 1px rgba(255, 95, 122, 0.55), 0 0 20px rgba(255, 95, 122, 0.18);
+  box-shadow:
+    0 0 0 1px rgba(255, 95, 122, 0.55),
+    0 0 20px rgba(255, 95, 122, 0.18);
 }
 
 .icon-btn {
@@ -150,7 +179,11 @@ body {
   justify-content: center;
   font-size: 16px;
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .icon-btn:hover {
@@ -177,8 +210,8 @@ body {
 .form-group input,
 .form-group textarea,
 .form-group select,
-.setting-item input[type='text'],
-.setting-item input[type='number'],
+.setting-item input[type="text"],
+.setting-item input[type="number"],
 .setting-item select,
 .snippets-toolbar input {
   width: 100%;
@@ -189,7 +222,10 @@ body {
   padding: 11px 12px;
   font-size: 14px;
   line-height: 1.4;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .form-group textarea {
@@ -207,8 +243,8 @@ body {
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus,
-.setting-item input[type='text']:focus,
-.setting-item input[type='number']:focus,
+.setting-item input[type="text"]:focus,
+.setting-item input[type="number"]:focus,
 .setting-item select:focus,
 .snippets-toolbar input:focus {
   outline: none;
